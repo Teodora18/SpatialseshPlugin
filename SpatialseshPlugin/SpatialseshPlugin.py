@@ -101,7 +101,7 @@ class SpatialseshPlugin(object):
 
     def run_designations(self):
 
-        processing.execAlgorithmDialog("spatialsesh3:designationsdatabase")
+        processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
 
     def unload(self):
         if self.provider:

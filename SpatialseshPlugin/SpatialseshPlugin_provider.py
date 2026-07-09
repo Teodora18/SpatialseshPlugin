@@ -50,35 +50,18 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         pass
 
     def loadAlgorithms(self):
-        """
-        Loads all algorithms belonging to this provider.
-        """
+
         self.addAlgorithm(NearestNeighbourDDAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 
     def id(self):
-        """
-        Returns the unique provider id, used for identifying the provider. This
-        string should be a unique, short, character only string, eg "qgis" or
-        "gdal". This string should not be localised.
-        """
-        return 'spatialsesh3'
+        return 'Spatialsesh'
 
     def name(self):
-        """
-        Returns the provider name, which is used to describe the provider
-        within the GUI.
-
-        This string should be short (e.g. "Lastools") and localised.
-        """
-        return self.tr('spatialsesh3')
+        return self.tr('Spatialsesh')
 
     def icon(self):
-        """
-        Should return a QIcon which is used for your provider inside
-        the Processing toolbox.
-        """
         return QgsProcessingProvider.icon(self)
 
     def longName(self):
