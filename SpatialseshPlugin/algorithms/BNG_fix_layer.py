@@ -2,6 +2,10 @@
 # - fix the feedback numbering
 # - create a function for the processing of the three separated layers
 # - fix the conditions on which each layer's fields are refactored
+# - check the field mapping function definition and the bng layer conditions, and feedbacks there
+# - maybe move the get_field_mapping function calling in the processingBNGlayer function - so that we won't have one of the functions's parameters beinga function itself
+# - update the output dictionary, don't have another function write in that same dictionary as it is now, but update the content of the initial dictionary
+# - fix the final output creation and function calling - it's a bit ugly now
 
 
 from typing import Any, Optional
@@ -18,6 +22,7 @@ from qgis.core import QgsProcessingParameterFile
 from qgis.core import QgsProcessingParameterFeatureSink
 from qgis.core import QgsExpression
 from qgis.core import Qgis
+from qgis.core import QgsProject
 from qgis import processing
 
 
@@ -29,9 +34,9 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
                 "Layer_type",
                 "Select a layer type to fix",
                 options=[
+                    "Master",
                     "Baseline",
                     "Proposed",
-                    "Master",
                 ],
                 allowMultiple=False,
                 defaultValue=None,
@@ -97,7 +102,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type": 10,
             "type_name": "text",
         }
-    
+
     def create_int_field(self, expression, name, length=0):
         return {
             "alias": None,
@@ -110,7 +115,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type": 4,
             "type_name": "int8",
         }
-    
+
     def create_date_field(self, expression, name, length=0):
         return {
             "alias": None,
@@ -124,24 +129,246 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type_name": "date",
         }
 
-    def get_field_mapping(self):
+    def get_field_mapping(self, bng_type):
         PARCEL_REF = self.create_text_field("Parcel_Ref", "Parcel Ref", 99)
+        BASELINE_BROAD_HABITAT_TYPE = self.create_text_field(
+            "Baseline_Broad_Habitat_Type", "Baseline Broad Habitat Type", 99
+        )
+        BASELINE_HABITAT_TYPE = self.create_text_field(
+            "Baseline_Habitat_Type",
+            "Baseline Habitat Type",
+            99,
+        )
+        AREA = self.create_int_field("Area", "Area")
+        BASELINE_CONDITION = self.create_text_field(
+            "Baseline_Condition",
+            "Baseline Condition",
+            99,
+        )
+        BASELINE_STRATEGIC_SIGNIFICANCE = self.create_text_field(
+            "Baseline_Strategic_Significance",
+            "Baseline Strategic Significance",
+            99,
+        )
 
+        RETENTION_CATEGORY = self.create_text_field(
+            "Retention_Category",
+            "Retention Category",
+            99,
+        )
+        LOCATION = self.create_text_field("Location", "Location", 99)
+        PROPOSED_BROAD_HABITAT_TYPE = self.create_text_field(
+            "Proposed_Broad_Habitat_Type",
+            "Proposed Broad Habitat Type",
+            99,
+        )
+        PROPOSED_HABITAT_TYPE = self.create_text_field(
+            "Proposed_Habitat_Type",
+            "Proposed Habitat Type",
+            99,
+        )
+        PROPOSED_CONDITION = self.create_text_field(
+            "Proposed_Condition",
+            "Proposed Condition",
+            99,
+        )
+        PROPOSED_STRATEGIC_SIGNIFICANCE = self.create_text_field(
+            "Proposed_Strategic_Significance",
+            "Proposed Strategic Significance",
+            99,
+        )
+        HABITAT_CREATED_IN_ADVANCE_YEARS = self.create_text_field(
+            "Habitat_created_in_advance_years",
+            "Habitat created in advance/years",
+            99,
+        )
+        DELAY_IN_STARTING_HABITAT_CREATION_YEARS = self.create_text_field(
+            "Delay_in_starting_habitat_creation_years",
+            "Delay in starting habitat creation/years",
+            99,
+        )
+        SPATIAL_RISK_CATEGORY = self.create_text_field(
+            "Spatial_risk_category",
+            "Spatial risk category",
+            99,
+        )
+        SITE_NAME = self.create_text_field("Site_Name", "Site Name")
+        SURVEY_DATE = self.create_date_field("Survey_Date", "Survey Date")
+        SURVEY_DETAILS = self.create_text_field("Survey_Details", "Survey Details")
+        COMMENT = self.create_text_field("Comment", "Comment")
+        MAPPED_BY = self.create_text_field("Mapped_by", "Mapped by")
+        COMPANY = self.create_text_field("Company", "Company")
+        BASE_MAP = self.create_text_field("Base_Map", "Base Map")
+        BASELINE_DISTINCTIVENESS = self.create_text_field(
+            "Baseline_Distinctiveness",
+            "Baseline Distinctiveness",
+            999,
+        )
+        PROPOSED_DISTINCTIVENESS = self.create_text_field(
+            "Proposed_Distinctiveness",
+            "Proposed Distinctiveness",
+            999,
+        )
+        PHOTO = self.create_text_field("Photo", "Photo")
+        FID = self.create_int_field("fid", "fid")
+        UKHAB_LV1 = self.create_text_field("UKhabLv1", "UKhabLv1")
+        UKHAB_LV1_CODE = self.create_text_field("UKhabLv1_Code", "UKhabLv1_Code")
+        UKHAB_LV2 = self.create_text_field("UKHabLv2", "UKhabLv2")
+        UKHAB_LV2_CODE = self.create_text_field("UKhabLv2_Code", "UKhabLv2_Code")
+        UKHAB_LV3 = self.create_text_field("UKhabLv3", "UKhabLv3")
+        UKHAB_LV3_CODE = self.create_text_field("UKhabLv3_Code", "UKhabLv3_Code")
+        UKHAB_LV4 = self.create_text_field("UKhabLv4", "UKhabLv4")
+        UKHAB_LV4_CODE = self.create_text_field("UKhabLv4_Code", "UKhabLv4_Code")
+        UKHAB_LV5 = self.create_text_field("UKhabLv5", "UKhabLv5")
+        UKHAB_LV5_CODE = self.create_text_field("UKhabLv5_Code", "UKhabLv5_Code")
+        ESSENTIAL_SECONDARY_CODE = self.create_text_field(
+            "EssentialSecondaryCode",
+            "EssentialSecondaryCode",
+        )
+        ESSENTIAL_CODE_LABEL = self.create_text_field(
+            "EssentialCodeLabel",
+            "EssentialCodeLabel",
+        )
+        ADDITIONAL_SECONDARY_CODE = self.create_text_field(
+            "AdditionalSecondaryCode",
+            "AdditionalSecondaryCode",
+        )
+        ASSOCIATED_CODE_LABEL = self.create_text_field(
+            "AssociatedCodeLabel",
+            "AssociatedCodeLabel",
+        )
+        UKHABITAT = self.create_text_field("UKhabitat", "UKhabitat")
+        UKHAB_CODE = self.create_text_field("UKhabCode", "UKhabCode")
+        PREVIOUS_SURVEY = self.create_text_field(
+            "PreviousSurvey",
+            "PreviousSurvey",
+        )
+        SITE = self.create_text_field(
+            "Site",
+            "Site",
+        )
+        HABITAT_MANAGEMENT = self.create_text_field(
+            "HabitatManagement",
+            "HabitatManagement",
+        )
+        GUIDANCE = self.create_text_field(
+            "Guidance",
+            "Guidance",
+        )
+        GUIDANCE_Q = self.create_text_field(
+            "Guidance_Q",
+            "Guidance_Q",
+        )
 
+        COMMON_ADDITIONAL_FIELDS = [
+            SITE_NAME,
+            SURVEY_DATE,
+            SURVEY_DETAILS,
+            COMMENT,
+            MAPPED_BY,
+            COMPANY,
+            BASE_MAP,
+        ]
 
-        pass
+        if bng_type == 0:
+            MASTER_FIELDS = (
+                [
+                    PARCEL_REF,
+                    BASELINE_BROAD_HABITAT_TYPE,
+                    BASELINE_HABITAT_TYPE,
+                    AREA,
+                    BASELINE_CONDITION,
+                    BASELINE_STRATEGIC_SIGNIFICANCE,
+                    RETENTION_CATEGORY,
+                    LOCATION,
+                    PROPOSED_BROAD_HABITAT_TYPE,
+                    PROPOSED_HABITAT_TYPE,
+                    PROPOSED_CONDITION,
+                    PROPOSED_STRATEGIC_SIGNIFICANCE,
+                    HABITAT_CREATED_IN_ADVANCE_YEARS,
+                    DELAY_IN_STARTING_HABITAT_CREATION_YEARS,
+                    SPATIAL_RISK_CATEGORY,
+                ]
+                + COMMON_ADDITIONAL_FIELDS
+                + [BASELINE_DISTINCTIVENESS, PROPOSED_DISTINCTIVENESS, PHOTO]
+            )
+            return MASTER_FIELDS
+        elif bng_type == 1:
+            BASELINE_FIELDS = (
+                [
+                    FID,
+                    PARCEL_REF,
+                    UKHAB_LV1,
+                    UKHAB_LV1_CODE,
+                    UKHAB_LV2,
+                    UKHAB_LV2_CODE,
+                    UKHAB_LV3,
+                    UKHAB_LV3_CODE,
+                    UKHAB_LV4,
+                    UKHAB_LV4_CODE,
+                    UKHAB_LV5,
+                    UKHAB_LV5_CODE,
+                    ESSENTIAL_SECONDARY_CODE,
+                    ESSENTIAL_CODE_LABEL,
+                    ADDITIONAL_SECONDARY_CODE,
+                    ASSOCIATED_CODE_LABEL,
+                    BASELINE_BROAD_HABITAT_TYPE,
+                    BASELINE_HABITAT_TYPE,
+                    BASELINE_CONDITION,
+                    BASELINE_STRATEGIC_SIGNIFICANCE,
+                    RETENTION_CATEGORY,
+                    LOCATION,
+                    BASELINE_DISTINCTIVENESS,
+                    AREA,
+                    UKHABITAT,
+                    UKHAB_CODE,
+                ]
+                + COMMON_ADDITIONAL_FIELDS
+                + [
+                    PHOTO,
+                    PREVIOUS_SURVEY,
+                    SITE,
+                    HABITAT_MANAGEMENT,
+                    GUIDANCE,
+                    GUIDANCE_Q,
+                ]
+            )
+            return BASELINE_FIELDS
+        elif bng_type == 2:
+            PROPOSED_FIELDS = (
+                [
+                    FID,
+                    AREA,
+                    PROPOSED_BROAD_HABITAT_TYPE,
+                    PROPOSED_HABITAT_TYPE,
+                    PROPOSED_CONDITION,
+                    PROPOSED_STRATEGIC_SIGNIFICANCE,
+                    HABITAT_CREATED_IN_ADVANCE_YEARS,
+                    DELAY_IN_STARTING_HABITAT_CREATION_YEARS,
+                    SPATIAL_RISK_CATEGORY,
+                    LOCATION,
+                ]
+                + COMMON_ADDITIONAL_FIELDS
+                + [PROPOSED_DISTINCTIVENESS, PHOTO]
+            )
+            return PROPOSED_FIELDS
+        else:
+            raise NotImplementedError(
+                "Unexpected BNG layer type. Layer type must be 'Master', 'Baseline' or 'Proposed'"
+            )
 
     def processBNGlayer(
         self,
         bng_type,
         input_layer,
+        parameters: dict[str, Any],
         refactor_fields_params: list[dict[str, Any]],
-        outputs_bng: dict[str, Any],
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ):
 
         feedback = QgsProcessingMultiStepFeedback(4, feedback)
+        outputs_bng: dict[str, Any] = {}
 
         # Refactor fields - names
         outputs_bng[f"RefactorFieldsNames{bng_type}"] = processing.run(
@@ -204,7 +431,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "FIELD_TYPE": 1,  # Integer (32 bit)
             "FORMULA": "area($geometry)",
             "INPUT": outputs_bng[f"DeleteHoles{bng_type}"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            "OUTPUT": parameters['Final_cleaned_output'],
         }
         outputs_bng[f"FieldCalculatorArea{bng_type}"] = processing.run(
             "native:fieldcalculator",
@@ -271,19 +498,6 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        # Conditional branch
-        outputs["ConditionalBranch"] = processing.run(
-            "native:condition",
-            {},
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(3)
-        if feedback.isCanceled():
-            return {}
-
         # Reproject layer
         outputs["ReprojectLayer"] = processing.run(
             "native:reprojectlayer",
@@ -301,7 +515,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["ReprojectLayer"] is not None
 
-        feedback.setCurrentStep(4)
+        feedback.setCurrentStep(3)
         if feedback.isCanceled():
             return {}
 
@@ -324,7 +538,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["RenameField"] is not None
 
-        feedback.setCurrentStep(5)
+        feedback.setCurrentStep(4)
         if feedback.isCanceled():
             return {}
 
@@ -355,7 +569,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["Vclean"] is not None
 
-        feedback.setCurrentStep(6)
+        feedback.setCurrentStep(5)
         if feedback.isCanceled():
             return {}
 
@@ -374,7 +588,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["FixGeometriesVclean"] is not None
 
-        feedback.setCurrentStep(7)
+        feedback.setCurrentStep(6)
         if feedback.isCanceled():
             return {}
 
@@ -395,7 +609,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["Union"] is not None
 
-        feedback.setCurrentStep(8)
+        feedback.setCurrentStep(7)
         if feedback.isCanceled():
             return {}
 
@@ -413,7 +627,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["DeleteDuplicateGeometries"] is not None
 
-        feedback.setCurrentStep(9)
+        feedback.setCurrentStep(8)
         if feedback.isCanceled():
             return {}
 
@@ -432,7 +646,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["RemoveNullGeometries"] is not None
 
-        feedback.setCurrentStep(10)
+        feedback.setCurrentStep(9)
         if feedback.isCanceled():
             return {}
 
@@ -440,7 +654,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         outputs["SelectByExpression"] = processing.run(
             "qgis:selectbyexpression",
             {
-                "EXPRESSION": "area($geometry) < @filter_small_polygons_size_m2  ",
+                "EXPRESSION": f"area($geometry) < {parameters['filter_small_polygons_size_m2']}",
                 "INPUT": outputs["RemoveNullGeometries"]["OUTPUT"],
                 "METHOD": 0,  # creating new selection
             },
@@ -748,1156 +962,14 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
+        # QgsProject.instance().addMapLayer(outputs["EliminateSelectedPolygonsGaps"]['OUTPUT'])
+
         feedback.setCurrentStep(26)
         if feedback.isCanceled():
             return {}
 
-        # Refactor fields - names
-        alg_params = {
-            "FIELDS_MAPPING": [
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Parcel_Ref",
-                    "length": 99,
-                    "name": "Parcel Ref",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Broad_Habitat_Type",
-                    "length": 99,
-                    "name": "Baseline Broad Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Habitat_Type",
-                    "length": 99,
-                    "name": "Baseline Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Area",
-                    "length": 0,
-                    "name": "Area",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 2,
-                    "type_name": "integer",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Condition",
-                    "length": 99,
-                    "name": "Baseline Condition",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Strategic_Significance",
-                    "length": 99,
-                    "name": "Baseline Strategic Significance",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Retention_Category",
-                    "length": 99,
-                    "name": "Retention Category",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Location",
-                    "length": 99,
-                    "name": "Location",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Broad_Habitat_Type",
-                    "length": 99,
-                    "name": "Proposed Broad Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Habitat_Type",
-                    "length": 99,
-                    "name": "Proposed Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Condition",
-                    "length": 99,
-                    "name": "Proposed Condition",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Strategic_Significance",
-                    "length": 99,
-                    "name": "Proposed Strategic Significance",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Habitat_created_in_advance_years",
-                    "length": 99,
-                    "name": "Habitat created in advance/years",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Delay_in_starting_habitat_creation_years",
-                    "length": 99,
-                    "name": "Delay in starting habitat creation/years",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Spatial_risk_category",
-                    "length": 99,
-                    "name": "Spatial risk category",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Site_Name",
-                    "length": 0,
-                    "name": "Site Name",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Date",
-                    "length": 0,
-                    "name": "Survey Date",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 14,
-                    "type_name": "date",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Details",
-                    "length": 0,
-                    "name": "Survey Details",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Comment",
-                    "length": 0,
-                    "name": "Comment",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Mapped_by",
-                    "length": 0,
-                    "name": "Mapped by",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Company",
-                    "length": 0,
-                    "name": "Company",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Base_Map",
-                    "length": 0,
-                    "name": "Base Map",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Distinctiveness",
-                    "length": 999,
-                    "name": "Baseline Distinctiveness",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Distinctiveness",
-                    "length": 999,
-                    "name": "Proposed Distinctiveness",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Photo",
-                    "length": 0,
-                    "name": "Photo",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-            ],
-            "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["RefactorFieldsNames"] = processing.run(
-            "native:refactorfields",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(27)
-        if feedback.isCanceled():
-            return {}
-
-        # Drop field - fid
-        alg_params = {
-            "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-            "INPUT": outputs["RefactorFieldsNames"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DropFieldFid"] = processing.run(
-            "native:deletecolumn",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(36)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete holes
-        alg_params = {
-            "INPUT": outputs["DropFieldFid"]["OUTPUT"],
-            "MIN_AREA": 0.1,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DeleteHoles"] = processing.run(
-            "native:deleteholes",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(38)
-        if feedback.isCanceled():
-            return {}
-
-        # Field calculator - area
-        alg_params = {
-            "FIELD_LENGTH": 0,
-            "FIELD_NAME": "Area",
-            "FIELD_PRECISION": 0,
-            "FIELD_TYPE": 1,  # Integer (32 bit)
-            "FORMULA": "area($geometry)",
-            "INPUT": outputs["DeleteHoles"]["OUTPUT"],
-            "OUTPUT": parameters["Final_cleaned_output"],
-        }
-        outputs["FieldCalculatorArea"] = processing.run(
-            "native:fieldcalculator",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        results["Final_cleaned_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
-
-        feedback.setCurrentStep(40)
-        if feedback.isCanceled():
-            return {}
-
-        # Refactor fields - names baseline
-        alg_params = {
-            "FIELDS_MAPPING": [
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "fid",
-                    "length": 0,
-                    "name": "fid",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 4,
-                    "type_name": "int8",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Parcel_Ref",
-                    "length": 99,
-                    "name": "Parcel Ref",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv1",
-                    "length": 0,
-                    "name": "UKhabLv1",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv1_Code",
-                    "length": 0,
-                    "name": "UKhabLv1_Code",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKHabLv2",
-                    "length": 0,
-                    "name": "UKhabLv2",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv2_Code",
-                    "length": 0,
-                    "name": "UKhabLv2_Code",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv3",
-                    "length": 0,
-                    "name": "UKhabLv3",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv3_Code",
-                    "length": 0,
-                    "name": "UKhabLv3_Code",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv4",
-                    "length": 0,
-                    "name": "UKhabLv4",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv4_Code",
-                    "length": 0,
-                    "name": "UKhabLv4_Code",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv5",
-                    "length": 0,
-                    "name": "UKhabLv5",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabLv5_Code",
-                    "length": 0,
-                    "name": "UKhabLv5_Code",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "EssentialSecondaryCode",
-                    "length": 0,
-                    "name": "EssentialSecondaryCode",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "EssentialCodeLabel",
-                    "length": 0,
-                    "name": "EssentialCodeLabel",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "AdditionalSecondaryCode",
-                    "length": 0,
-                    "name": "AdditionalSecondaryCode",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "AssociatedCodeLabel",
-                    "length": 0,
-                    "name": "AssociatedCodeLabel",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Broad_Habitat_Type",
-                    "length": 99,
-                    "name": "Baseline Broad Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Habitat_Type",
-                    "length": 99,
-                    "name": "Baseline Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Condition",
-                    "length": 99,
-                    "name": "Baseline Condition",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Strategic_Significance",
-                    "length": 99,
-                    "name": "Baseline Strategic Significance",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Retention_Category",
-                    "length": 99,
-                    "name": "Retention Category",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Location",
-                    "length": 99,
-                    "name": "Location",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Baseline_Distinctiveness",
-                    "length": 999,
-                    "name": "Baseline Distinctiveness",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Area",
-                    "length": 0,
-                    "name": "Area",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 2,
-                    "type_name": "integer",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabitat",
-                    "length": 0,
-                    "name": "UKhabitat",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "UKhabCode",
-                    "length": 0,
-                    "name": "UKhabCode",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Site_Name",
-                    "length": 0,
-                    "name": "Site Name",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Date",
-                    "length": 0,
-                    "name": "Survey Date",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 14,
-                    "type_name": "date",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Details",
-                    "length": 0,
-                    "name": "Survey Details",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Comment",
-                    "length": 0,
-                    "name": "Comment",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Mapped_by",
-                    "length": 0,
-                    "name": "Mapped by",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Company",
-                    "length": 0,
-                    "name": "Company",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Base_Map",
-                    "length": 0,
-                    "name": "Base Map",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Photo",
-                    "length": 0,
-                    "name": "Photo",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "PreviousSurvey",
-                    "length": 0,
-                    "name": "PreviousSurvey",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Site",
-                    "length": 0,
-                    "name": "Site",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "HabitatManagement",
-                    "length": 0,
-                    "name": "HabitatManagement",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Guidance",
-                    "length": 0,
-                    "name": "Guidance",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Guidance_Q",
-                    "length": 0,
-                    "name": "Guidance_Q",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-            ],
-            "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["RefactorFieldsNamesBaseline"] = processing.run(
-            "native:refactorfields",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(31)
-        if feedback.isCanceled():
-            return {}
-
-        # Drop field - fid baseline
-        alg_params = {
-            "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-            "INPUT": outputs["RefactorFieldsNamesBaseline"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DropFieldFidBaseline"] = processing.run(
-            "native:deletecolumn",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(33)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete holes baseline
-        alg_params = {
-            "INPUT": outputs["DropFieldFidBaseline"]["OUTPUT"],
-            "MIN_AREA": 0.1,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DeleteHolesBaseline"] = processing.run(
-            "native:deleteholes",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(34)
-        if feedback.isCanceled():
-            return {}
-
-        # Field calculator - area baseline
-        alg_params = {
-            "FIELD_LENGTH": 0,
-            "FIELD_NAME": "Area",
-            "FIELD_PRECISION": 0,
-            "FIELD_TYPE": 1,  # Integer (32 bit)
-            "FORMULA": "area($geometry)",
-            "INPUT": outputs["DeleteHolesBaseline"]["OUTPUT"],
-            "OUTPUT": parameters["Final_cleaned_output"],
-        }
-        outputs["FieldCalculatorAreaBaseline"] = processing.run(
-            "native:fieldcalculator",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        results["Final_cleaned_output"] = outputs["FieldCalculatorAreaBaseline"][
-            "OUTPUT"
-        ]
-
-        feedback.setCurrentStep(37)
-        if feedback.isCanceled():
-            return {}
-
-        # Refactor fields - names proposed
-        alg_params = {
-            "FIELDS_MAPPING": [
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "fid",
-                    "length": 0,
-                    "name": "fid",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 4,
-                    "type_name": "int8",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Area",
-                    "length": 0,
-                    "name": "Area",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 2,
-                    "type_name": "integer",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Broad_Habitat_Type",
-                    "length": 99,
-                    "name": "Proposed Broad Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Habitat_Type",
-                    "length": 99,
-                    "name": "Proposed Habitat Type",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Condition",
-                    "length": 99,
-                    "name": "Proposed Condition",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Strategic_Significance",
-                    "length": 99,
-                    "name": "Proposed Strategic Significance",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Habitat_created_in_advance_years",
-                    "length": 99,
-                    "name": "Habitat created in advance/years",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Delay_in_starting_habitat_creation_years",
-                    "length": 99,
-                    "name": "Delay in starting habitat creation/years",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Spatial_risk_category",
-                    "length": 99,
-                    "name": "Spatial risk category",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Location",
-                    "length": 99,
-                    "name": "Location",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Site_Name",
-                    "length": 0,
-                    "name": "Site Name",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Date",
-                    "length": 0,
-                    "name": "Survey Date",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 14,
-                    "type_name": "date",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Survey_Details",
-                    "length": 0,
-                    "name": "Survey Details",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Comment",
-                    "length": 0,
-                    "name": "Comment",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Mapped_by",
-                    "length": 0,
-                    "name": "Mapped by",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Company",
-                    "length": 0,
-                    "name": "Company",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Base_Map",
-                    "length": 0,
-                    "name": "Base Map",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Proposed_Distinctiveness",
-                    "length": 999,
-                    "name": "Proposed Distinctiveness",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-                {
-                    "alias": None,
-                    "comment": None,
-                    "expression": "Photo",
-                    "length": 0,
-                    "name": "Photo",
-                    "precision": 0,
-                    "sub_type": 0,
-                    "type": 10,
-                    "type_name": "text",
-                },
-            ],
-            "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["RefactorFieldsNamesProposed"] = processing.run(
-            "native:refactorfields",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(32)
-        if feedback.isCanceled():
-            return {}
-
-        # Drop field - fid proposed
-        alg_params = {
-            "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-            "INPUT": outputs["RefactorFieldsNamesProposed"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DropFieldFidProposed"] = processing.run(
-            "native:deletecolumn",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(35)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete holes proposed
-        alg_params = {
-            "INPUT": outputs["DropFieldFidProposed"]["OUTPUT"],
-            "MIN_AREA": 0.1,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs["DeleteHolesProposed"] = processing.run(
-            "native:deleteholes",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(39)
-        if feedback.isCanceled():
-            return {}
-
-        # Field calculator - area proposed
-        alg_params = {
-            "FIELD_LENGTH": 0,
-            "FIELD_NAME": "Area",
-            "FIELD_PRECISION": 0,
-            "FIELD_TYPE": 1,  # Integer (32 bit)
-            "FORMULA": "area($geometry)",
-            "INPUT": outputs["DeleteHolesProposed"]["OUTPUT"],
-            "OUTPUT": parameters["Final_cleaned_output"],
-        }
-        outputs["FieldCalculatorAreaProposed"] = processing.run(
-            "native:fieldcalculator",
-            alg_params,
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        results["Final_cleaned_output"] = outputs["FieldCalculatorAreaProposed"][
-            "OUTPUT"
-        ]
+        parameters["Final_cleaned_output"] = self.processBNGlayer(parameters["Layer_type"], outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"], parameters, self.get_field_mapping(parameters["Layer_type"]), context=context, feedback=feedback)
+        results["Final_cleaned_output"] = parameters["Final_cleaned_output"]
         return results
 
     def name(self) -> str:
