@@ -1,11 +1,9 @@
 # TODOs:
-# - fix the feedback numbering
-# - create a function for the processing of the three separated layers
-# - fix the conditions on which each layer's fields are refactored
-# - check the field mapping function definition and the bng layer conditions, and feedbacks there
-# - maybe move the get_field_mapping function calling in the processingBNGlayer function - so that we won't have one of the functions's parameters beinga function itself
-# - update the output dictionary, don't have another function write in that same dictionary as it is now, but update the content of the initial dictionary
-# - fix the final output creation and function calling - it's a bit ugly now
+#  - apply an additional condition where fields to be defined based on the bng_type
+# - update the output dictionary, don't have another function write in that same dictionary as it is now, but update the content of the initial dictionary? not sure if we need to do that
+# - the feature sink final_cleaned_output
+# - put a layer name to the final output
+# - is the feedback inside the function specified correctly?
 
 
 from typing import Any, Optional
@@ -270,6 +268,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             BASE_MAP,
         ]
 
+        # MASTER
         if bng_type == 0:
             MASTER_FIELDS = (
                 [
@@ -293,6 +292,8 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
                 + [BASELINE_DISTINCTIVENESS, PROPOSED_DISTINCTIVENESS, PHOTO]
             )
             return MASTER_FIELDS
+
+        # BASELINE
         elif bng_type == 1:
             BASELINE_FIELDS = (
                 [
@@ -334,6 +335,8 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
                 ]
             )
             return BASELINE_FIELDS
+
+        # PROPOSED
         elif bng_type == 2:
             PROPOSED_FIELDS = (
                 [
@@ -362,13 +365,13 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         bng_type,
         input_layer,
         parameters: dict[str, Any],
-        refactor_fields_params: list[dict[str, Any]],
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ):
 
         feedback = QgsProcessingMultiStepFeedback(4, feedback)
         outputs_bng: dict[str, Any] = {}
+        refactor_fields_params: list[dict[str, Any]] = self.get_field_mapping(bng_type)
 
         # Refactor fields - names
         outputs_bng[f"RefactorFieldsNames{bng_type}"] = processing.run(
@@ -388,14 +391,13 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         # Drop field - fid
-        alg_params = {
+        outputs_bng[f"DropFieldFid{bng_type}"] = processing.run(
+            "native:deletecolumn",
+            {
             "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
             "INPUT": outputs_bng[f"RefactorFieldsNames{bng_type}"]["OUTPUT"],
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs_bng[f"DropFieldFid{bng_type}"] = processing.run(
-            "native:deletecolumn",
-            alg_params,
+        },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
@@ -406,14 +408,13 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         # Delete holes
-        alg_params = {
+        outputs_bng[f"DeleteHoles{bng_type}"] = processing.run(
+            "native:deleteholes",
+            {
             "INPUT": outputs_bng[f"DropFieldFid{bng_type}"]["OUTPUT"],
             "MIN_AREA": 0.1,
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
-        outputs_bng[f"DeleteHoles{bng_type}"] = processing.run(
-            "native:deleteholes",
-            alg_params,
+        },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
@@ -424,7 +425,9 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             return {}
 
         # Field calculator - area
-        alg_params = {
+        outputs_bng[f"FieldCalculatorArea{bng_type}"] = processing.run(
+            "native:fieldcalculator",
+            {
             "FIELD_LENGTH": 0,
             "FIELD_NAME": "Area",
             "FIELD_PRECISION": 0,
@@ -432,10 +435,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "FORMULA": "area($geometry)",
             "INPUT": outputs_bng[f"DeleteHoles{bng_type}"]["OUTPUT"],
             "OUTPUT": parameters['Final_cleaned_output'],
-        }
-        outputs_bng[f"FieldCalculatorArea{bng_type}"] = processing.run(
-            "native:fieldcalculator",
-            alg_params,
+        },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
@@ -454,7 +454,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, Any]:
 
-        feedback = QgsProcessingMultiStepFeedback(41, feedback)
+        feedback = QgsProcessingMultiStepFeedback(25, feedback)
         results: dict[str, Any] = {}
         outputs: dict[str, Any] = {}
 
@@ -526,10 +526,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
                 "FIELD": "fid",
                 "INPUT": outputs["ReprojectLayer"]["OUTPUT"],
                 "NEW_NAME": "id",
-                "OUTPUT": QgsExpression(
-                    " @temporary_file_path_before_cleaning"
-                ).evaluate(),
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                "OUTPUT": f"{parameters['temporary_file_path_before_cleaning']}",
             },
             context=context,
             feedback=feedback,
@@ -665,7 +662,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["SelectByExpression"] is not None
 
-        feedback.setCurrentStep(11)
+        feedback.setCurrentStep(10)
         if feedback.isCanceled():
             return {}
 
@@ -684,7 +681,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["EliminateSelectedPolygons"] is not None
 
-        feedback.setCurrentStep(12)
+        feedback.setCurrentStep(11)
         if feedback.isCanceled():
             return {}
 
@@ -702,7 +699,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["MultipartToSingleparts"] is not None
 
-        feedback.setCurrentStep(13)
+        feedback.setCurrentStep(12)
         if feedback.isCanceled():
             return {}
 
@@ -721,7 +718,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["ConvertGeometryType"] is not None
 
-        feedback.setCurrentStep(14)
+        feedback.setCurrentStep(13)
         if feedback.isCanceled():
             return {}
 
@@ -741,7 +738,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["RemoveDuplicateVertices"] is not None
 
-        feedback.setCurrentStep(15)
+        feedback.setCurrentStep(14)
         if feedback.isCanceled():
             return {}
 
@@ -761,7 +758,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["ExtractByExpression"] is not None
 
-        feedback.setCurrentStep(16)
+        feedback.setCurrentStep(15)
         if feedback.isCanceled():
             return {}
 
@@ -782,7 +779,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["SnapGeometriesToLayer"] is not None
 
-        feedback.setCurrentStep(17)
+        feedback.setCurrentStep(16)
         if feedback.isCanceled():
             return {}
 
@@ -801,7 +798,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["FixGeometriesSnap"] is not None
 
-        feedback.setCurrentStep(18)
+        feedback.setCurrentStep(17)
         if feedback.isCanceled():
             return {}
 
@@ -821,7 +818,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["Dissolve"] is not None
 
-        feedback.setCurrentStep(19)
+        feedback.setCurrentStep(18)
         if feedback.isCanceled():
             return {}
 
@@ -840,7 +837,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["DeleteHolesDissolve"] is not None
 
-        feedback.setCurrentStep(20)
+        feedback.setCurrentStep(19)
         if feedback.isCanceled():
             return {}
 
@@ -861,7 +858,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["SymmetricalDifference"] is not None
 
-        feedback.setCurrentStep(21)
+        feedback.setCurrentStep(20)
         if feedback.isCanceled():
             return {}
 
@@ -879,7 +876,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None
 
-        feedback.setCurrentStep(22)
+        feedback.setCurrentStep(21)
         if feedback.isCanceled():
             return {}
 
@@ -904,7 +901,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["FieldCalculatorGaps"] is not None
 
-        feedback.setCurrentStep(23)
+        feedback.setCurrentStep(22)
         if feedback.isCanceled():
             return {}
 
@@ -926,7 +923,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["MergeVectorLayers"] is not None
 
-        feedback.setCurrentStep(24)
+        feedback.setCurrentStep(23)
         if feedback.isCanceled():
             return {}
 
@@ -945,7 +942,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["SelectByExpressionGaps"] is not None
 
-        feedback.setCurrentStep(25)
+        feedback.setCurrentStep(24)
         if feedback.isCanceled():
             return {}
 
@@ -962,14 +959,16 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
+        assert outputs["EliminateSelectedPolygonsGaps"] is not None
+
         # QgsProject.instance().addMapLayer(outputs["EliminateSelectedPolygonsGaps"]['OUTPUT'])
 
-        feedback.setCurrentStep(26)
+        feedback.setCurrentStep(25)
         if feedback.isCanceled():
             return {}
 
-        parameters["Final_cleaned_output"] = self.processBNGlayer(parameters["Layer_type"], outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"], parameters, self.get_field_mapping(parameters["Layer_type"]), context=context, feedback=feedback)
-        results["Final_cleaned_output"] = parameters["Final_cleaned_output"]
+        bng_fixed_layer = self.processBNGlayer(parameters["Layer_type"], outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"], parameters, context=context, feedback=feedback)
+        results["Final_cleaned_output"] = bng_fixed_layer
         return results
 
     def name(self) -> str:
