@@ -1,11 +1,3 @@
-# TODOs:
-#  - apply an additional condition where fields to be defined based on the bng_type
-# - update the output dictionary, don't have another function write in that same dictionary as it is now, but update the content of the initial dictionary? not sure if we need to do that
-# - the feature sink final_cleaned_output
-# - put a layer name to the final output
-# - is the feedback inside the function specified correctly?
-
-
 from typing import Any, Optional
 
 from qgis.core import QgsProcessing
@@ -88,7 +80,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             )
         )
 
-    def create_text_field(self, expression, name, length=0):
+    def create_text_field(self, expression, name, length=0) -> dict[str, Any]:
         return {
             "alias": None,
             "comment": None,
@@ -101,7 +93,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type_name": "text",
         }
 
-    def create_int_field(self, expression, name, length=0):
+    def create_int_field(self, expression, name, length=0) -> dict[str, Any]:
         return {
             "alias": None,
             "comment": None,
@@ -114,7 +106,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type_name": "int8",
         }
 
-    def create_date_field(self, expression, name, length=0):
+    def create_date_field(self, expression, name, length=0) -> dict[str, Any]:
         return {
             "alias": None,
             "comment": None,
@@ -127,335 +119,239 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             "type_name": "date",
         }
 
-    def get_field_mapping(self, bng_type):
-        PARCEL_REF = self.create_text_field("Parcel_Ref", "Parcel Ref", 99)
-        BASELINE_BROAD_HABITAT_TYPE = self.create_text_field(
+    def get_field_mapping(self, bng_type) -> list[dict[str, Any]]:
+
+        create_fields = {
+        "PARCEL_REF": lambda: self.create_text_field("Parcel_Ref", "Parcel Ref", 99),
+        "BASELINE_BROAD_HABITAT_TYPE": lambda: self.create_text_field(
             "Baseline_Broad_Habitat_Type", "Baseline Broad Habitat Type", 99
-        )
-        BASELINE_HABITAT_TYPE = self.create_text_field(
+        ),
+        "BASELINE_HABITAT_TYPE": lambda: self.create_text_field(
             "Baseline_Habitat_Type",
             "Baseline Habitat Type",
             99,
-        )
-        AREA = self.create_int_field("Area", "Area")
-        BASELINE_CONDITION = self.create_text_field(
+        ),
+        "AREA": lambda: self.create_int_field("Area", "Area"),
+        "BASELINE_CONDITION": lambda: self.create_text_field(
             "Baseline_Condition",
             "Baseline Condition",
             99,
-        )
-        BASELINE_STRATEGIC_SIGNIFICANCE = self.create_text_field(
+        ),
+        "BASELINE_STRATEGIC_SIGNIFICANCE": lambda: self.create_text_field(
             "Baseline_Strategic_Significance",
             "Baseline Strategic Significance",
             99,
-        )
+        ),
 
-        RETENTION_CATEGORY = self.create_text_field(
+        "RETENTION_CATEGORY": lambda: self.create_text_field(
             "Retention_Category",
             "Retention Category",
             99,
-        )
-        LOCATION = self.create_text_field("Location", "Location", 99)
-        PROPOSED_BROAD_HABITAT_TYPE = self.create_text_field(
+        ),
+        "LOCATION": lambda: self.create_text_field("Location", "Location", 99),
+        "PROPOSED_BROAD_HABITAT_TYPE": lambda: self.create_text_field(
             "Proposed_Broad_Habitat_Type",
             "Proposed Broad Habitat Type",
             99,
-        )
-        PROPOSED_HABITAT_TYPE = self.create_text_field(
+        ),
+        "PROPOSED_HABITAT_TYPE": lambda: self.create_text_field(
             "Proposed_Habitat_Type",
             "Proposed Habitat Type",
             99,
-        )
-        PROPOSED_CONDITION = self.create_text_field(
+        ),
+        "PROPOSED_CONDITION": lambda: self.create_text_field(
             "Proposed_Condition",
             "Proposed Condition",
             99,
-        )
-        PROPOSED_STRATEGIC_SIGNIFICANCE = self.create_text_field(
+        ),
+        "PROPOSED_STRATEGIC_SIGNIFICANCE": lambda: self.create_text_field(
             "Proposed_Strategic_Significance",
             "Proposed Strategic Significance",
             99,
-        )
-        HABITAT_CREATED_IN_ADVANCE_YEARS = self.create_text_field(
+        ),
+        "HABITAT_CREATED_IN_ADVANCE_YEARS": lambda: self.create_text_field(
             "Habitat_created_in_advance_years",
             "Habitat created in advance/years",
             99,
-        )
-        DELAY_IN_STARTING_HABITAT_CREATION_YEARS = self.create_text_field(
+        ),
+        "DELAY_IN_STARTING_HABITAT_CREATION_YEARS": lambda: self.create_text_field(
             "Delay_in_starting_habitat_creation_years",
             "Delay in starting habitat creation/years",
             99,
-        )
-        SPATIAL_RISK_CATEGORY = self.create_text_field(
+        ),
+        "SPATIAL_RISK_CATEGORY": lambda: self.create_text_field(
             "Spatial_risk_category",
             "Spatial risk category",
             99,
-        )
-        SITE_NAME = self.create_text_field("Site_Name", "Site Name")
-        SURVEY_DATE = self.create_date_field("Survey_Date", "Survey Date")
-        SURVEY_DETAILS = self.create_text_field("Survey_Details", "Survey Details")
-        COMMENT = self.create_text_field("Comment", "Comment")
-        MAPPED_BY = self.create_text_field("Mapped_by", "Mapped by")
-        COMPANY = self.create_text_field("Company", "Company")
-        BASE_MAP = self.create_text_field("Base_Map", "Base Map")
-        BASELINE_DISTINCTIVENESS = self.create_text_field(
+        ),
+        "SITE_NAME": lambda: self.create_text_field("Site_Name", "Site Name"),
+        "SURVEY_DATE": lambda: self.create_date_field("Survey_Date", "Survey Date"),
+        "SURVEY_DETAILS": lambda: self.create_text_field("Survey_Details", "Survey Details"),
+        "COMMENT": lambda: self.create_text_field("Comment", "Comment"),
+        "MAPPED_BY": lambda: self.create_text_field("Mapped_by", "Mapped by"),
+        "COMPANY": lambda: self.create_text_field("Company", "Company"),
+        "BASE_MAP": lambda: self.create_text_field("Base_Map", "Base Map"),
+        "BASELINE_DISTINCTIVENESS": lambda: self.create_text_field(
             "Baseline_Distinctiveness",
             "Baseline Distinctiveness",
             999,
-        )
-        PROPOSED_DISTINCTIVENESS = self.create_text_field(
+        ),
+        "PROPOSED_DISTINCTIVENESS": lambda: self.create_text_field(
             "Proposed_Distinctiveness",
             "Proposed Distinctiveness",
             999,
-        )
-        PHOTO = self.create_text_field("Photo", "Photo")
-        FID = self.create_int_field("fid", "fid")
-        UKHAB_LV1 = self.create_text_field("UKhabLv1", "UKhabLv1")
-        UKHAB_LV1_CODE = self.create_text_field("UKhabLv1_Code", "UKhabLv1_Code")
-        UKHAB_LV2 = self.create_text_field("UKHabLv2", "UKhabLv2")
-        UKHAB_LV2_CODE = self.create_text_field("UKhabLv2_Code", "UKhabLv2_Code")
-        UKHAB_LV3 = self.create_text_field("UKhabLv3", "UKhabLv3")
-        UKHAB_LV3_CODE = self.create_text_field("UKhabLv3_Code", "UKhabLv3_Code")
-        UKHAB_LV4 = self.create_text_field("UKhabLv4", "UKhabLv4")
-        UKHAB_LV4_CODE = self.create_text_field("UKhabLv4_Code", "UKhabLv4_Code")
-        UKHAB_LV5 = self.create_text_field("UKhabLv5", "UKhabLv5")
-        UKHAB_LV5_CODE = self.create_text_field("UKhabLv5_Code", "UKhabLv5_Code")
-        ESSENTIAL_SECONDARY_CODE = self.create_text_field(
+        ),
+        "PHOTO": lambda: self.create_text_field("Photo", "Photo"),
+        "UKHAB_LV1": lambda: self.create_text_field("UKhabLv1", "UKhabLv1"),
+        "UKHAB_LV1_CODE": lambda: self.create_text_field("UKhabLv1_Code", "UKhabLv1_Code"),
+        "UKHAB_LV2": lambda: self.create_text_field("UKHabLv2", "UKhabLv2"),
+        "UKHAB_LV2_CODE": lambda: self.create_text_field("UKhabLv2_Code", "UKhabLv2_Code"),
+        "UKHAB_LV3": lambda: self.create_text_field("UKhabLv3", "UKhabLv3"),
+        "UKHAB_LV3_CODE": lambda: self.create_text_field("UKhabLv3_Code", "UKhabLv3_Code"),
+        "UKHAB_LV4": lambda: self.create_text_field("UKhabLv4", "UKhabLv4"),
+        "UKHAB_LV4_CODE": lambda: self.create_text_field("UKhabLv4_Code", "UKhabLv4_Code"),
+        "UKHAB_LV5": lambda: self.create_text_field("UKhabLv5", "UKhabLv5"),
+        "UKHAB_LV5_CODE": lambda: self.create_text_field("UKhabLv5_Code", "UKhabLv5_Code"),
+        "ESSENTIAL_SECONDARY_CODE": lambda: self.create_text_field(
             "EssentialSecondaryCode",
             "EssentialSecondaryCode",
-        )
-        ESSENTIAL_CODE_LABEL = self.create_text_field(
+        ),
+        "ESSENTIAL_CODE_LABEL": lambda: self.create_text_field(
             "EssentialCodeLabel",
             "EssentialCodeLabel",
-        )
-        ADDITIONAL_SECONDARY_CODE = self.create_text_field(
+        ),
+        "ADDITIONAL_SECONDARY_CODE": lambda: self.create_text_field(
             "AdditionalSecondaryCode",
             "AdditionalSecondaryCode",
-        )
-        ASSOCIATED_CODE_LABEL = self.create_text_field(
+        ),
+        "ASSOCIATED_CODE_LABEL": lambda: self.create_text_field(
             "AssociatedCodeLabel",
             "AssociatedCodeLabel",
-        )
-        UKHABITAT = self.create_text_field("UKhabitat", "UKhabitat")
-        UKHAB_CODE = self.create_text_field("UKhabCode", "UKhabCode")
-        PREVIOUS_SURVEY = self.create_text_field(
+        ),
+        "UKHABITAT": lambda: self.create_text_field("UKhabitat", "UKhabitat"),
+        "UKHAB_CODE": lambda: self.create_text_field("UKhabCode", "UKhabCode"),
+        "PREVIOUS_SURVEY": lambda: self.create_text_field(
             "PreviousSurvey",
             "PreviousSurvey",
-        )
-        SITE = self.create_text_field(
+        ),
+        "SITE": lambda: self.create_text_field(
             "Site",
             "Site",
-        )
-        HABITAT_MANAGEMENT = self.create_text_field(
+        ),
+        "HABITAT_MANAGEMENT": lambda: self.create_text_field(
             "HabitatManagement",
             "HabitatManagement",
-        )
-        GUIDANCE = self.create_text_field(
+        ),
+        "GUIDANCE": lambda: self.create_text_field(
             "Guidance",
             "Guidance",
-        )
-        GUIDANCE_Q = self.create_text_field(
+        ),
+        "GUIDANCE_Q": lambda: self.create_text_field(
             "Guidance_Q",
             "Guidance_Q",
         )
+        }
 
         COMMON_ADDITIONAL_FIELDS = [
-            SITE_NAME,
-            SURVEY_DATE,
-            SURVEY_DETAILS,
-            COMMENT,
-            MAPPED_BY,
-            COMPANY,
-            BASE_MAP,
+            "SITE_NAME",
+            "SURVEY_DATE",
+            "SURVEY_DETAILS",
+            "COMMENT",
+            "MAPPED_BY",
+            "COMPANY",
+            "BASE_MAP",
         ]
 
-        # MASTER
-        if bng_type == 0:
-            MASTER_FIELDS = (
+        field_mapping_by_bng_type = {
+            0 : ( # MASTER
                 [
-                    PARCEL_REF,
-                    BASELINE_BROAD_HABITAT_TYPE,
-                    BASELINE_HABITAT_TYPE,
-                    AREA,
-                    BASELINE_CONDITION,
-                    BASELINE_STRATEGIC_SIGNIFICANCE,
-                    RETENTION_CATEGORY,
-                    LOCATION,
-                    PROPOSED_BROAD_HABITAT_TYPE,
-                    PROPOSED_HABITAT_TYPE,
-                    PROPOSED_CONDITION,
-                    PROPOSED_STRATEGIC_SIGNIFICANCE,
-                    HABITAT_CREATED_IN_ADVANCE_YEARS,
-                    DELAY_IN_STARTING_HABITAT_CREATION_YEARS,
-                    SPATIAL_RISK_CATEGORY,
+                    "PARCEL_REF",
+                    "BASELINE_BROAD_HABITAT_TYPE",
+                    "BASELINE_HABITAT_TYPE",
+                    "AREA",
+                    "BASELINE_CONDITION",
+                    "BASELINE_STRATEGIC_SIGNIFICANCE",
+                    "RETENTION_CATEGORY",
+                    "LOCATION",
+                    "PROPOSED_BROAD_HABITAT_TYPE",
+                    "PROPOSED_HABITAT_TYPE",
+                    "PROPOSED_CONDITION",
+                    "PROPOSED_STRATEGIC_SIGNIFICANCE",
+                    "HABITAT_CREATED_IN_ADVANCE_YEARS",
+                    "DELAY_IN_STARTING_HABITAT_CREATION_YEARS",
+                    "SPATIAL_RISK_CATEGORY",
                 ]
                 + COMMON_ADDITIONAL_FIELDS
-                + [BASELINE_DISTINCTIVENESS, PROPOSED_DISTINCTIVENESS, PHOTO]
-            )
-            return MASTER_FIELDS
-
-        # BASELINE
-        elif bng_type == 1:
-            BASELINE_FIELDS = (
+                + ["BASELINE_DISTINCTIVENESS", "PROPOSED_DISTINCTIVENESS", "PHOTO"]
+            ),
+            1 : ( # BASELINE
                 [
-                    FID,
-                    PARCEL_REF,
-                    UKHAB_LV1,
-                    UKHAB_LV1_CODE,
-                    UKHAB_LV2,
-                    UKHAB_LV2_CODE,
-                    UKHAB_LV3,
-                    UKHAB_LV3_CODE,
-                    UKHAB_LV4,
-                    UKHAB_LV4_CODE,
-                    UKHAB_LV5,
-                    UKHAB_LV5_CODE,
-                    ESSENTIAL_SECONDARY_CODE,
-                    ESSENTIAL_CODE_LABEL,
-                    ADDITIONAL_SECONDARY_CODE,
-                    ASSOCIATED_CODE_LABEL,
-                    BASELINE_BROAD_HABITAT_TYPE,
-                    BASELINE_HABITAT_TYPE,
-                    BASELINE_CONDITION,
-                    BASELINE_STRATEGIC_SIGNIFICANCE,
-                    RETENTION_CATEGORY,
-                    LOCATION,
-                    BASELINE_DISTINCTIVENESS,
-                    AREA,
-                    UKHABITAT,
-                    UKHAB_CODE,
+                    "PARCEL_REF",
+                    "UKHAB_LV1",
+                    "UKHAB_LV1_CODE",
+                    "UKHAB_LV2",
+                    "UKHAB_LV2_CODE",
+                    "UKHAB_LV3",
+                    "UKHAB_LV3_CODE",
+                    "UKHAB_LV4",
+                    "UKHAB_LV4_CODE",
+                    "UKHAB_LV5",
+                    "UKHAB_LV5_CODE",
+                    "ESSENTIAL_SECONDARY_CODE",
+                    "ESSENTIAL_CODE_LABEL",
+                    "ADDITIONAL_SECONDARY_CODE",
+                    "ASSOCIATED_CODE_LABEL",
+                    "BASELINE_BROAD_HABITAT_TYPE",
+                    "BASELINE_HABITAT_TYPE",
+                    "BASELINE_CONDITION",
+                    "BASELINE_STRATEGIC_SIGNIFICANCE",
+                    "RETENTION_CATEGORY",
+                    "LOCATION",
+                    "BASELINE_DISTINCTIVENESS",
+                    "AREA",
+                    "UKHABITAT",
+                    "UKHAB_CODE",
                 ]
                 + COMMON_ADDITIONAL_FIELDS
                 + [
-                    PHOTO,
-                    PREVIOUS_SURVEY,
-                    SITE,
-                    HABITAT_MANAGEMENT,
-                    GUIDANCE,
-                    GUIDANCE_Q,
+                    "PHOTO",
+                    "PREVIOUS_SURVEY",
+                    "SITE",
+                    "HABITAT_MANAGEMENT",
+                    "GUIDANCE",
+                    "GUIDANCE_Q",
                 ]
-            )
-            return BASELINE_FIELDS
-
-        # PROPOSED
-        elif bng_type == 2:
-            PROPOSED_FIELDS = (
+            ),
+            2 : ( # PROPOSED
                 [
-                    FID,
-                    AREA,
-                    PROPOSED_BROAD_HABITAT_TYPE,
-                    PROPOSED_HABITAT_TYPE,
-                    PROPOSED_CONDITION,
-                    PROPOSED_STRATEGIC_SIGNIFICANCE,
-                    HABITAT_CREATED_IN_ADVANCE_YEARS,
-                    DELAY_IN_STARTING_HABITAT_CREATION_YEARS,
-                    SPATIAL_RISK_CATEGORY,
-                    LOCATION,
+                    "PROPOSED_BROAD_HABITAT_TYPE",
+                    "PROPOSED_HABITAT_TYPE",
+                    "PROPOSED_CONDITION",
+                    "PROPOSED_STRATEGIC_SIGNIFICANCE",
+                    "HABITAT_CREATED_IN_ADVANCE_YEARS",
+                    "DELAY_IN_STARTING_HABITAT_CREATION_YEARS",
+                    "SPATIAL_RISK_CATEGORY",
+                    "LOCATION",
                 ]
                 + COMMON_ADDITIONAL_FIELDS
-                + [PROPOSED_DISTINCTIVENESS, PHOTO]
-            )
-            return PROPOSED_FIELDS
-        else:
+                + ["PROPOSED_DISTINCTIVENESS", "PHOTO", "AREA",]
+            ),
+        }
+        if bng_type not in field_mapping_by_bng_type.keys():
             raise NotImplementedError(
                 "Unexpected BNG layer type. Layer type must be 'Master', 'Baseline' or 'Proposed'"
             )
-
-    def processBNGlayer(
-        self,
-        bng_type,
-        input_layer,
-        parameters: dict[str, Any],
-        context: QgsProcessingContext,
-        feedback: QgsProcessingFeedback | None,
-    ):
-
-        feedback = QgsProcessingMultiStepFeedback(4, feedback)
-        outputs_bng: dict[str, Any] = {}
-        refactor_fields_params: list[dict[str, Any]] = self.get_field_mapping(bng_type)
-
-        # Refactor fields - names
-        outputs_bng[f"RefactorFieldsNames{bng_type}"] = processing.run(
-            "native:refactorfields",
-            {
-                "FIELDS_MAPPING": refactor_fields_params,
-                "INPUT": input_layer,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(1)
-        if feedback.isCanceled():
-            return {}
-
-        # Drop field - fid
-        outputs_bng[f"DropFieldFid{bng_type}"] = processing.run(
-            "native:deletecolumn",
-            {
-            "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-            "INPUT": outputs_bng[f"RefactorFieldsNames{bng_type}"]["OUTPUT"],
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(2)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete holes
-        outputs_bng[f"DeleteHoles{bng_type}"] = processing.run(
-            "native:deleteholes",
-            {
-            "INPUT": outputs_bng[f"DropFieldFid{bng_type}"]["OUTPUT"],
-            "MIN_AREA": 0.1,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        feedback.setCurrentStep(3)
-        if feedback.isCanceled():
-            return {}
-
-        # Field calculator - area
-        outputs_bng[f"FieldCalculatorArea{bng_type}"] = processing.run(
-            "native:fieldcalculator",
-            {
-            "FIELD_LENGTH": 0,
-            "FIELD_NAME": "Area",
-            "FIELD_PRECISION": 0,
-            "FIELD_TYPE": 1,  # Integer (32 bit)
-            "FORMULA": "area($geometry)",
-            "INPUT": outputs_bng[f"DeleteHoles{bng_type}"]["OUTPUT"],
-            "OUTPUT": parameters['Final_cleaned_output'],
-        },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-        feedback.setCurrentStep(4)
-        if feedback.isCanceled():
-            return {}
-        pass
-
-        return outputs_bng[f"FieldCalculatorArea{bng_type}"]["OUTPUT"]
+        return [create_fields[key]() for key in field_mapping_by_bng_type[bng_type]]
 
     def processAlgorithm(
         self,
         parameters: dict[str, Any],
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
-    ) -> dict[str, Any]:
+    ) -> dict[str, str]:
 
-        feedback = QgsProcessingMultiStepFeedback(25, feedback)
-        results: dict[str, Any] = {}
+        feedback = QgsProcessingMultiStepFeedback(28, feedback)
+        results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
         # Fix geometries
@@ -967,8 +863,88 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        bng_fixed_layer = self.processBNGlayer(parameters["Layer_type"], outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"], parameters, context=context, feedback=feedback)
-        results["Final_cleaned_output"] = bng_fixed_layer
+        # Refactor fields - names
+        refactor_fields_params: list[dict[str, Any]] = self.get_field_mapping(parameters['Layer_type'])
+
+        outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"] = processing.run(
+            "native:refactorfields",
+            {
+                "FIELDS_MAPPING": refactor_fields_params,
+                "INPUT": outputs["EliminateSelectedPolygonsGaps"]['OUTPUT'],
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"] is not None
+
+        feedback.setCurrentStep(26)
+        if feedback.isCanceled():
+            return {}
+
+        # Drop field - fid, cat, gap, path
+        outputs["DropFields"] = processing.run(
+            "native:deletecolumn",
+            {
+            "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
+            "INPUT": outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"]["OUTPUT"],
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["DropFields"] is not None
+
+        feedback.setCurrentStep(27)
+        if feedback.isCanceled():
+            return {}
+
+        # Delete holes
+        outputs["DeleteHoles"] = processing.run(
+            "native:deleteholes",
+            {
+            "INPUT": outputs["DropFields"]["OUTPUT"],
+            "MIN_AREA": 0.1,
+            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+        },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["DeleteHoles"] is not None
+
+        feedback.setCurrentStep(28)
+        if feedback.isCanceled():
+            return {}
+
+        # Field calculator - area
+        outputs["FieldCalculatorArea"] = processing.run(
+            "native:fieldcalculator",
+            {
+            "FIELD_LENGTH": 0,
+            "FIELD_NAME": "Area",
+            "FIELD_PRECISION": 0,
+            "FIELD_TYPE": 1,  # Integer (32 bit)
+            "FORMULA": "area($geometry)",
+            "INPUT": outputs["DeleteHoles"]["OUTPUT"],
+            "OUTPUT": parameters['Final_cleaned_output'],
+        },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["FieldCalculatorArea"] is not None
+
+        results["Final_cleaned_output"] = outputs["FieldCalculatorArea"]['OUTPUT']
+        context.layerToLoadOnCompletionDetails(results["Final_cleaned_output"]).name = (
+            "Final_cleaned_output"
+        )
         return results
 
     def name(self) -> str:
