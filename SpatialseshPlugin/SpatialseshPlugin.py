@@ -99,9 +99,20 @@ class SpatialseshPlugin(object):
             parent=self.iface.mainWindow(),
         )
 
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "favicon.png"),
+            "BNG fix layer",
+            self.run_BNG_fix,
+            parent=self.iface.mainWindow(),
+        )
+
     def run_designations(self):
 
         processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
+
+    def run_BNG_fix(self):
+
+        processing.execAlgorithmDialog("Spatialsesh:BNG_FixLayer")
 
     def unload(self):
         if self.provider:
