@@ -69,7 +69,7 @@ class NearestNeighbourDDAlgorithm(QgsProcessingAlgorithm):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, Any]:
-        feedback = QgsProcessingMultiStepFeedback(9, feedback)
+        feedback = QgsProcessingMultiStepFeedback(7, feedback)
         results: dict[str, Any] = {}
         outputs: dict[str, Any] = {}
 
@@ -190,92 +190,60 @@ class NearestNeighbourDDAlgorithm(QgsProcessingAlgorithm):
             return {}
         feedback.setProgressText("Features ordered by distance.")
 
-        # Extract by expression - international
-        outputs["ExtractByExpressionInternational"] = processing.run(
-            "native:extractbyexpression",
-            {
-                "EXPRESSION": "DesignationType = 'International'",
-                "INPUT": outputs["OrderByExpression"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
+        cases = [
+            ("International", "International"),
+            ("National and Local", "NationalAndLocal"),
+        ]
 
-        assert outputs["ExtractByExpressionInternational"] is not None
+        for step, (designation, output_name) in enumerate(cases, start=6):
 
-        feedback.setCurrentStep(6)
-        if feedback.isCanceled():
-            return {}
-        feedback.setProgressText("International sites extracted.")
+            feedback.setCurrentStep(step)
 
-        # Drop field(s) - international
-        outputs["DropFieldsInternational"] = processing.run(
-            "native:deletecolumn",
-            {
-                "COLUMN": QgsExpression("'DesignationType'").evaluate(),
-                "INPUT": outputs["ExtractByExpressionInternational"]["OUTPUT"],
-                "OUTPUT": parameters["International"],
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
+            if feedback.isCanceled():
+                return {}
 
-        assert outputs["DropFieldsInternational"] is not None
-        results["International"] = outputs["DropFieldsInternational"]["OUTPUT"]
-        context.layerToLoadOnCompletionDetails(results["International"]).name = (
-            "International"
-        )
+            # Extract by expression
+            outputs[f"ExtractByExpression{output_name}"] = processing.run(
+                "native:extractbyexpression",
+                {
+                    "EXPRESSION": f"DesignationType = '{designation}'",
+                    "INPUT": outputs["OrderByExpression"]["OUTPUT"],
+                    "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+                },
+                context=context,
+                feedback=feedback,
+                is_child_algorithm=True,
+            )
 
-        feedback.setCurrentStep(7)
-        if feedback.isCanceled():
-            return {}
-        feedback.setProgressText("Unnecessary fields dropped.")
+            assert outputs[f"ExtractByExpression{output_name}"] is not None
 
-        # Extract by expression - national
-        outputs["ExtractByExpressionNational"] = processing.run(
-            "native:extractbyexpression",
-            {
-                "EXPRESSION": "DesignationType = 'National and Local'",
-                "INPUT": outputs["OrderByExpression"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
+            if feedback.isCanceled():
+                return {}
 
-        assert outputs["ExtractByExpressionNational"] is not None
+            feedback.setProgressText(f"{designation} sites extracted.")
 
-        feedback.setCurrentStep(8)
-        if feedback.isCanceled():
-            return {}
-        feedback.setProgressText("National sites extracted.")
+            # Drop field(s)
+            outputs[f"DropFields{output_name}"] = processing.run(
+                "native:deletecolumn",
+                {
+                    "COLUMN": ["DesignationType"],
+                    "INPUT": outputs[f"ExtractByExpression{output_name}"]["OUTPUT"],
+                    "OUTPUT": parameters[output_name],
+                },
+                context=context,
+                feedback=feedback,
+                is_child_algorithm=True,
+            )
 
-        # Drop field(s) - national
-        outputs["DropFieldsNational"] = processing.run(
-            "native:deletecolumn",
-            {
-                "COLUMN": QgsExpression("'DesignationType'").evaluate(),
-                "INPUT": outputs["ExtractByExpressionNational"]["OUTPUT"],
-                "OUTPUT": parameters["NationalAndLocal"],
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
+            assert outputs[f"DropFields{output_name}"] is not None
 
-        assert outputs["DropFieldsNational"] is not None
+            results[output_name] = outputs[f"DropFields{output_name}"]["OUTPUT"]
 
-        results["NationalAndLocal"] = outputs["DropFieldsNational"]["OUTPUT"]
-        context.layerToLoadOnCompletionDetails(results["NationalAndLocal"]).name = (
-            "NationalAndLocal"
-        )
+            context.layerToLoadOnCompletionDetails(results[output_name]).name = (
+                output_name
+            )
 
-        feedback.setProgressText("Unnecessary fields dropped.")
-
+            feedback.setProgressText(f"{designation} unnecessary fields dropped.")
         return results
 
     def name(self) -> str:
