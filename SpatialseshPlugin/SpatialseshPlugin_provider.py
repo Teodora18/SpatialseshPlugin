@@ -33,6 +33,7 @@ __revision__ = '$Format:%H$'
 from qgis.core import QgsProcessingProvider
 from .algorithms.NearestNeighbourDD import NearestNeighbourDDAlgorithm
 from .algorithms.BNG_fix_layer import BNG_FixLayerAlgorithm
+from .algorithms.DistanceAnalysis import DistanceAnalysisAlgorithm
 
 
 class SpatialseshPluginProvider(QgsProcessingProvider):
@@ -54,6 +55,7 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
 
         self.addAlgorithm(NearestNeighbourDDAlgorithm())
         self.addAlgorithm(BNG_FixLayerAlgorithm())
+        self.addAlgorithm(DistanceAnalysisAlgorithm())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 

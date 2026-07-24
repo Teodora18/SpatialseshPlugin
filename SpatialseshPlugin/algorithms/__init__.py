@@ -1,2 +1,3 @@
 from .NearestNeighbourDD import NearestNeighbourDDAlgorithm
 from .BNG_fix_layer import BNG_FixLayerAlgorithm
+from .DistanceAnalysis import DistanceAnalysisAlgorithm
