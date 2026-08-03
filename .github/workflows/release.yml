@@ -46,11 +46,11 @@ jobs:
 
         - name: Double zip workaround
           run: |
-              mkdir /tmp/SpatialSesh |
-              unzip SpatialSeshPlugin.latest.zip -d /tmp/SpatialSesh
+              mkdir /tmp/Spatialsesh |
+              unzip SpatialseshPlugin.latest.zip -d /tmp/Spatialsesh
 
         - name: Upload release assets
           uses: actions/upload-artifact@v4
           with:
-            name: SpatialSeshplugin.latest.zip
-            path: /tmp/SpatialSesh
+            name: Spatialseshplugin.latest.zip
+            path: /tmp/Spatialsesh
