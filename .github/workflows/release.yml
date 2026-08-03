@@ -1,0 +1,56 @@
+on:
+  push:
+  release:
+    types: published
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'release' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install qgis-plugin-ci
+        run: pip install qgis-plugin-ci>=2.8.6
+
+      - name: Release
+        run: |
+          VERSION=${{ github.ref_name }}
+          qgis-plugin-ci release ${VERSION} \
+          --github-token ${{ secrets.GITHUB_TOKEN }}
+
+  package:
+      runs-on: ubuntu-latest
+      # if: ${{ github.event_name == 'workflow_dispatch' }}
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            submodules: recursive
+            ref: ${{ github.event.inputs.ref }}
+
+        - name: Install dependencies
+          run: |
+            sudo apt update && sudo apt install qtbase5-dev qttools5-dev-tools
+            sudo pip install qgis-plugin-ci
+        - name: Package
+          run: |
+              qgis-plugin-ci package latest
+
+        - name: Double zip workaround
+          run: |
+              mkdir /tmp/SpatialSesh |
+              unzip SpatialSeshPlugin.latest.zip -d /tmp/SpatialSesh
+
+        - name: Upload release assets
+          uses: actions/upload-artifact@v4
+          with:
+            name: SpatialSeshplugin.latest.zip
+            path: /tmp/SpatialSesh
