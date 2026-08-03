@@ -4,20 +4,41 @@ on:
     types: published
 
 jobs:
+  pyqt6-check:
+    name: PyQt6 compatibility check
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/qgis/pyqgis4-checker:main-ubuntu
+    steps:
+      - name: Get source code
+        uses: actions/checkout@v7
+
+      - name: Check PyQt5 to PyQt6 compatibility
+        run: |
+          pyqt5_to_pyqt6.py --dry_run SpatialseshPlugin/
+          pyqt5_to_pyqt6.py --logfile pyqt6_checker.log SpatialseshPlugin/
+      - name: Upload script report if script fails
+        uses: actions/upload-artifact@v7
+        if: ${{ failure() }}
+        with:
+          name: pyqgis4-checker-report
+          path: pyqt6_checker.log
+          retention-days: 7
+
   release:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
       - name: Install qgis-plugin-ci
-        run: pip install qgis-plugin-ci>=2.8.6
+        run: pip install qgis-plugin-ci>=2.10.0
 
       - name: Release
         run: |
@@ -31,15 +52,15 @@ jobs:
 
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v7
           with:
             submodules: recursive
-            ref: ${{ github.event.inputs.ref }}
+            # ref: ${{ github.event.inputs.ref }}
 
         - name: Install dependencies
           run: |
-            sudo apt update && sudo apt install qtbase5-dev qttools5-dev-tools
             sudo pip install qgis-plugin-ci
+            
         - name: Package
           run: |
               qgis-plugin-ci package latest
@@ -50,7 +71,7 @@ jobs:
               unzip SpatialseshPlugin.latest.zip -d /tmp/Spatialsesh
 
         - name: Upload release assets
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v7
           with:
             name: Spatialseshplugin.latest.zip
             path: /tmp/Spatialsesh
