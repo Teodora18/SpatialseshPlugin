@@ -6,8 +6,8 @@ qgisMinimumVersion=3.22
 description=Spatialsesh plugin with useful processing tools.
 about=This plugin is developed for automatization of complex processing algorithms.
 version=0.1
-; repository=https://github.com/Teodora18/SpatialseshPlugin
-; tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
+repository=https://github.com/Teodora18/SpatialseshPlugin
+tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
 
 ; changelog=
 tags= processing, algorithms
