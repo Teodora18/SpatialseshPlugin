@@ -42,7 +42,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 "filter_small_polygons_size_m2",
                 "Filter small polygons size (m2)",
-                type=QgsProcessingParameterNumber.Double,  # type: ignore
+                type=Qgis.ProcessingNumberParameterType.Double,
                 defaultValue=10,
             )
         )
@@ -50,7 +50,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 "snapping_tolerance_m",
                 "Snapping tolerance (m)",
-                type=QgsProcessingParameterNumber.Double,  # type: ignore
+                type=Qgis.ProcessingNumberParameterType.Double,
                 defaultValue=0.3,
             )
         )
@@ -63,7 +63,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterFile(
                 "temporary_file_path_before_cleaning",
                 "File path for interim results",
-                behavior=QgsProcessingParameterFile.File,  # type: ignore
+                behavior=Qgis.ProcessingFileParameterBehavior.File,
                 fileFilter="All files (*.*)",
             )
         )

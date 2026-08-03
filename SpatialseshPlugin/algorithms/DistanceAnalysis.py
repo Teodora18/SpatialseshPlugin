@@ -37,7 +37,7 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
             QgsProcessingParameterNumber(
                 "maximim_distance_m",
                 "Maximim distance (m)",
-                type=QgsProcessingParameterNumber.Double,  # type: ignore
+                type=Qgis.ProcessingNumberParameterType.Double,
                 defaultValue=None,
             )
         )
