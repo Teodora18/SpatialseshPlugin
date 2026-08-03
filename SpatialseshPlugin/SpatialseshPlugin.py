@@ -32,7 +32,7 @@ __revision__ = "$Format:%H$"
 
 import os
 
-from qgis.core import QgsProcessingAlgorithm, QgsApplication
+from qgis.core import QgsApplication
 from .SpatialseshPlugin_provider import SpatialseshPluginProvider
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
@@ -40,7 +40,6 @@ from qgis import processing
 
 
 class SpatialseshPlugin(object):
-
     def __init__(self, iface):
         self.iface = iface
         self.provider = None
@@ -64,7 +63,6 @@ class SpatialseshPlugin(object):
         whats_this=None,
         parent=None,
     ):
-
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
         action.triggered.connect(callback)
@@ -114,15 +112,12 @@ class SpatialseshPlugin(object):
         )
 
     def run_designations(self):
-
         processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
 
     def run_BNG_fix(self):
-
         processing.execAlgorithmDialog("Spatialsesh:BNG_FixLayer")
 
     def run_distance_analysis(self):
-
         processing.execAlgorithmDialog("Spatialsesh:DistanceAnalysis")
 
     def unload(self):

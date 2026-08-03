@@ -22,13 +22,13 @@
  ***************************************************************************/
 """
 
-__author__ = 'Teodora Koleva'
-__date__ = '2026-07-08'
-__copyright__ = '(C) 2026 by Teodora Koleva'
+__author__ = "Teodora Koleva"
+__date__ = "2026-07-08"
+__copyright__ = "(C) 2026 by Teodora Koleva"
 
 # This will get replaced with a git SHA1 when you do a git archive
 
-__revision__ = '$Format:%H$'
+__revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
 from .algorithms.NearestNeighbourDD import NearestNeighbourDDAlgorithm
@@ -37,7 +37,6 @@ from .algorithms.DistanceAnalysis import DistanceAnalysisAlgorithm
 
 
 class SpatialseshPluginProvider(QgsProcessingProvider):
-
     def __init__(self):
         """
         Default constructor.
@@ -52,7 +51,6 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         pass
 
     def loadAlgorithms(self):
-
         self.addAlgorithm(NearestNeighbourDDAlgorithm())
         self.addAlgorithm(BNG_FixLayerAlgorithm())
         self.addAlgorithm(DistanceAnalysisAlgorithm())
@@ -60,10 +58,10 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         # self.addAlgorithm(MyOtherAlgorithm())
 
     def id(self):
-        return 'Spatialsesh'
+        return "Spatialsesh"
 
     def name(self):
-        return self.tr('Spatialsesh')
+        return self.tr("Spatialsesh")
 
     def icon(self):
         return QgsProcessingProvider.icon(self)

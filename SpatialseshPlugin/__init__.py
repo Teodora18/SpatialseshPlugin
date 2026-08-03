@@ -22,12 +22,12 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
-__author__ = 'Teodora Koleva'
-__date__ = '2026-07-08'
-__copyright__ = '(C) 2026 by Teodora Koleva'
-
+__author__ = "Teodora Koleva"
+__date__ = "2026-07-08"
+__copyright__ = "(C) 2026 by Teodora Koleva"
 
 
 def classFactory(iface):
     from .SpatialseshPlugin import SpatialseshPlugin
+
     return SpatialseshPlugin(iface)

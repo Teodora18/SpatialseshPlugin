@@ -15,7 +15,6 @@ from ..utils.calculate_direction import calculate_distance_and_direction
 
 
 class NearestNeighbourDDAlgorithm(QgsProcessingAlgorithm):
-
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
@@ -137,7 +136,6 @@ class NearestNeighbourDDAlgorithm(QgsProcessingAlgorithm):
         ]
 
         for step, (designation, output_name) in enumerate(cases, start=6):
-
             feedback.setCurrentStep(step)
 
             if feedback.isCanceled():
@@ -180,9 +178,9 @@ class NearestNeighbourDDAlgorithm(QgsProcessingAlgorithm):
 
             results[output_name] = outputs[f"DropFields{output_name}"]["OUTPUT"]
 
-            context.layerToLoadOnCompletionDetails(results[output_name]).name = (
-                output_name
-            )
+            context.layerToLoadOnCompletionDetails(
+                results[output_name]
+            ).name = output_name
 
             feedback.setProgressText(f"{designation} unnecessary fields dropped.")
         return results

@@ -1,6 +1,5 @@
 from typing import Any, Optional
 
-from qgis.core import QgsProcessing
 from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
@@ -14,7 +13,6 @@ from ..utils.calculate_direction import calculate_distance_and_direction
 
 
 class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
-
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
@@ -59,7 +57,6 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, Any]:
-
         feedback = QgsProcessingMultiStepFeedback(4, feedback)
         results: dict[str, Any] = {}
         outputs: dict[str, Any] = {}
