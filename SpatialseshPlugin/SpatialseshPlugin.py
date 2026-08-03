@@ -106,6 +106,13 @@ class SpatialseshPlugin(object):
             parent=self.iface.mainWindow(),
         )
 
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
+            "Distance Analysis",
+            self.run_distance_analysis,
+            parent=self.iface.mainWindow(),
+        )
+
     def run_designations(self):
 
         processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
@@ -113,6 +120,10 @@ class SpatialseshPlugin(object):
     def run_BNG_fix(self):
 
         processing.execAlgorithmDialog("Spatialsesh:BNG_FixLayer")
+
+    def run_distance_analysis(self):
+
+        processing.execAlgorithmDialog("Spatialsesh:DistanceAnalysis")
 
     def unload(self):
         if self.provider:
