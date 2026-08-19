@@ -10,9 +10,10 @@ from qgis.core import QgsProcessingParameterNumber
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import QgsProcessingParameterFile
 from qgis.core import QgsProcessingParameterFeatureSink
-from qgis.core import QgsExpression
 from qgis.core import Qgis
 from qgis import processing
+
+from ..utils.fix_layer import fix_layer_main_pipeline
 
 
 class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
@@ -363,518 +364,27 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, str]:
-        feedback = QgsProcessingMultiStepFeedback(28, feedback)
+        feedback = QgsProcessingMultiStepFeedback(27, feedback)
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
-        # Fix geometries
+        # Fix layer with the main pipeline of algorithms
 
-        outputs["FixGeometries"] = processing.run(
-            "native:fixgeometries",
-            {
-                "INPUT": parameters["polygon_layer_to_clean"],
-                "METHOD": 0,  # Linework
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
+        fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+            parameters["polygon_layer_to_clean"],
+            parameters["filter_small_polygons_size_m2"],
+            parameters["snapping_tolerance_m"],
+            parameters["crs_to_reproject"],
+            parameters["temporary_file_path_before_cleaning"],
+            context,
+            feedback,
+            starting_step=1,
         )
 
-        assert outputs["FixGeometries"] is not None
-
-        feedback.setCurrentStep(1)
-        if feedback.isCanceled():
-            return {}
-
-        # Check validity
-        outputs["CheckValidity"] = processing.run(
-            "qgis:checkvalidity",
-            {
-                "IGNORE_RING_SELF_INTERSECTION": False,
-                "INPUT_LAYER": outputs["FixGeometries"]["OUTPUT"],
-                "METHOD": 2,  # GEOS
-                "VALID_OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["CheckValidity"] is not None
-
-        feedback.setCurrentStep(2)
-        if feedback.isCanceled():
-            return {}
-
-        # Reproject layer
-        outputs["ReprojectLayer"] = processing.run(
-            "native:reprojectlayer",
-            {
-                "CONVERT_CURVED_GEOMETRIES": False,
-                "INPUT": outputs["CheckValidity"]["VALID_OUTPUT"],
-                "OPERATION": None,
-                "TARGET_CRS": parameters["crs_to_reproject"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["ReprojectLayer"] is not None
-
-        feedback.setCurrentStep(3)
-        if feedback.isCanceled():
-            return {}
-
-        # Rename field
-        outputs["RenameField"] = processing.run(
-            "native:renametablefield",
-            {
-                "FIELD": "fid",
-                "INPUT": outputs["ReprojectLayer"]["OUTPUT"],
-                "NEW_NAME": "id",
-                "OUTPUT": f"{parameters['temporary_file_path_before_cleaning']}",
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["RenameField"] is not None
-
-        feedback.setCurrentStep(4)
-        if feedback.isCanceled():
-            return {}
-
-        # v.clean
-        outputs["Vclean"] = processing.run(
-            "grass:v.clean",
-            {
-                "-b": False,
-                "-c": False,
-                "GRASS_MIN_AREA_PARAMETER": 0.0001,
-                "GRASS_OUTPUT_TYPE_PARAMETER": 0,  # auto
-                "GRASS_REGION_PARAMETER": None,
-                "GRASS_SNAP_TOLERANCE_PARAMETER": -1,
-                "GRASS_VECTOR_DSCO": None,
-                "GRASS_VECTOR_EXPORT_NOCAT": False,
-                "GRASS_VECTOR_LCO": None,
-                "input": outputs["RenameField"]["OUTPUT"],
-                "threshold": None,
-                "tool": [0],  # break
-                "type": [4],  # area
-                "error": QgsProcessing.TEMPORARY_OUTPUT,
-                "output": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["Vclean"] is not None
-
-        feedback.setCurrentStep(5)
-        if feedback.isCanceled():
-            return {}
-
-        # Fix geometries - v.clean
-        outputs["FixGeometriesVclean"] = processing.run(
-            "native:fixgeometries",
-            {
-                "INPUT": outputs["Vclean"]["output"],
-                "METHOD": 0,  # Linework
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["FixGeometriesVclean"] is not None
-
-        feedback.setCurrentStep(6)
-        if feedback.isCanceled():
-            return {}
-
-        # Union
-        outputs["Union"] = processing.run(
-            "native:union",
-            {
-                "GRID_SIZE": None,
-                "INPUT": outputs["FixGeometriesVclean"]["OUTPUT"],
-                "OVERLAY": None,
-                "OVERLAY_FIELDS_PREFIX": None,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["Union"] is not None
-
-        feedback.setCurrentStep(7)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete duplicate geometries
-        outputs["DeleteDuplicateGeometries"] = processing.run(
-            "native:deleteduplicategeometries",
-            {
-                "INPUT": outputs["Union"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["DeleteDuplicateGeometries"] is not None
-
-        feedback.setCurrentStep(8)
-        if feedback.isCanceled():
-            return {}
-
-        # Remove null geometries
-        outputs["RemoveNullGeometries"] = processing.run(
-            "native:removenullgeometries",
-            {
-                "INPUT": outputs["DeleteDuplicateGeometries"]["OUTPUT"],
-                "REMOVE_EMPTY": True,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["RemoveNullGeometries"] is not None
-
-        feedback.setCurrentStep(9)
-        if feedback.isCanceled():
-            return {}
-
-        # Select by expression
-        outputs["SelectByExpression"] = processing.run(
-            "qgis:selectbyexpression",
-            {
-                "EXPRESSION": f"area($geometry) < {parameters['filter_small_polygons_size_m2']}",
-                "INPUT": outputs["RemoveNullGeometries"]["OUTPUT"],
-                "METHOD": 0,  # creating new selection
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["SelectByExpression"] is not None
-
-        feedback.setCurrentStep(10)
-        if feedback.isCanceled():
-            return {}
-
-        # Eliminate selected polygons
-        outputs["EliminateSelectedPolygons"] = processing.run(
-            "qgis:eliminateselectedpolygons",
-            {
-                "INPUT": outputs["SelectByExpression"]["OUTPUT"],
-                "MODE": 2,  # Largest Common Boundary
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["EliminateSelectedPolygons"] is not None
-
-        feedback.setCurrentStep(11)
-        if feedback.isCanceled():
-            return {}
-
-        # Multipart to singleparts
-        outputs["MultipartToSingleparts"] = processing.run(
-            "native:multiparttosingleparts",
-            {
-                "INPUT": outputs["EliminateSelectedPolygons"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["MultipartToSingleparts"] is not None
-
-        feedback.setCurrentStep(12)
-        if feedback.isCanceled():
-            return {}
-
-        # Convert geometry type
-        outputs["ConvertGeometryType"] = processing.run(
-            "qgis:convertgeometrytype",
-            {
-                "INPUT": outputs["MultipartToSingleparts"]["OUTPUT"],
-                "TYPE": 4,  # Polygons
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["ConvertGeometryType"] is not None
-
-        feedback.setCurrentStep(13)
-        if feedback.isCanceled():
-            return {}
-
-        # Remove duplicate vertices
-        outputs["RemoveDuplicateVertices"] = processing.run(
-            "native:removeduplicatevertices",
-            {
-                "INPUT": outputs["ConvertGeometryType"]["OUTPUT"],
-                "TOLERANCE": 0.01,
-                "USE_Z_VALUE": False,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["RemoveDuplicateVertices"] is not None
-
-        feedback.setCurrentStep(14)
-        if feedback.isCanceled():
-            return {}
-
-        # Extract by expression
-        # for small polygons with no neighbous
-        outputs["ExtractByExpression"] = processing.run(
-            "native:extractbyexpression",
-            {
-                "EXPRESSION": "area($geometry) > 0.50",
-                "INPUT": outputs["RemoveDuplicateVertices"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["ExtractByExpression"] is not None
-
-        feedback.setCurrentStep(15)
-        if feedback.isCanceled():
-            return {}
-
-        # Snap geometries to layer
-        outputs["SnapGeometriesToLayer"] = processing.run(
-            "native:snapgeometries",
-            {
-                "BEHAVIOR": 0,  # Prefer aligning nodes, insert extra vertices where required
-                "INPUT": outputs["ExtractByExpression"]["OUTPUT"],
-                "REFERENCE_LAYER": outputs["ExtractByExpression"]["OUTPUT"],
-                "TOLERANCE": parameters["snapping_tolerance_m"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["SnapGeometriesToLayer"] is not None
-
-        feedback.setCurrentStep(16)
-        if feedback.isCanceled():
-            return {}
-
-        # Fix geometries - snap
-        outputs["FixGeometriesSnap"] = processing.run(
-            "native:fixgeometries",
-            {
-                "INPUT": outputs["SnapGeometriesToLayer"]["OUTPUT"],
-                "METHOD": 0,  # Linework
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["FixGeometriesSnap"] is not None
-
-        feedback.setCurrentStep(17)
-        if feedback.isCanceled():
-            return {}
-
-        # Dissolve
-        outputs["Dissolve"] = processing.run(
-            "native:dissolve",
-            {
-                "FIELD": [""],
-                "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
-                "SEPARATE_DISJOINT": False,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["Dissolve"] is not None
-
-        feedback.setCurrentStep(18)
-        if feedback.isCanceled():
-            return {}
-
-        # Delete holes - dissolve
-        outputs["DeleteHolesDissolve"] = processing.run(
-            "native:deleteholes",
-            {
-                "INPUT": outputs["Dissolve"]["OUTPUT"],
-                "MIN_AREA": 50,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["DeleteHolesDissolve"] is not None
-
-        feedback.setCurrentStep(19)
-        if feedback.isCanceled():
-            return {}
-
-        # Symmetrical difference
-        outputs["SymmetricalDifference"] = processing.run(
-            "native:symmetricaldifference",
-            {
-                "GRID_SIZE": None,
-                "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
-                "OVERLAY": outputs["DeleteHolesDissolve"]["OUTPUT"],
-                "OVERLAY_FIELDS_PREFIX": None,
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["SymmetricalDifference"] is not None
-
-        feedback.setCurrentStep(20)
-        if feedback.isCanceled():
-            return {}
-
-        # Multipart to singleparts - symmetrical difference
-        outputs["MultipartToSinglepartsSymmetricalDifference"] = processing.run(
-            "native:multiparttosingleparts",
-            {
-                "INPUT": outputs["SymmetricalDifference"]["OUTPUT"],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None
-
-        feedback.setCurrentStep(21)
-        if feedback.isCanceled():
-            return {}
-
-        # Field calculator - gaps
-        outputs["FieldCalculatorGaps"] = processing.run(
-            "native:fieldcalculator",
-            {
-                "FIELD_LENGTH": 0,
-                "FIELD_NAME": "gap",
-                "FIELD_PRECISION": 0,
-                "FIELD_TYPE": 2,  # Text (string)
-                "FORMULA": "'yes'",
-                "INPUT": outputs["MultipartToSinglepartsSymmetricalDifference"][
-                    "OUTPUT"
-                ],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["FieldCalculatorGaps"] is not None
-
-        feedback.setCurrentStep(22)
-        if feedback.isCanceled():
-            return {}
-
-        # Merge vector layers
-        outputs["MergeVectorLayers"] = processing.run(
-            "native:mergevectorlayers",
-            {
-                "CRS": None,
-                "LAYERS": [
-                    outputs["FieldCalculatorGaps"]["OUTPUT"],
-                    outputs["FixGeometriesSnap"]["OUTPUT"],
-                ],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["MergeVectorLayers"] is not None
-
-        feedback.setCurrentStep(23)
-        if feedback.isCanceled():
-            return {}
-
-        # Select by expression - gaps
-        outputs["SelectByExpressionGaps"] = processing.run(
-            "qgis:selectbyexpression",
-            {
-                "EXPRESSION": "gap = 'yes'",
-                "INPUT": outputs["MergeVectorLayers"]["OUTPUT"],
-                "METHOD": 0,  # creating new selection
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["SelectByExpressionGaps"] is not None
-
-        feedback.setCurrentStep(24)
-        if feedback.isCanceled():
-            return {}
-
-        # Eliminate selected polygons - gaps
-        outputs["EliminateSelectedPolygonsGaps"] = processing.run(
-            "qgis:eliminateselectedpolygons",
-            {
-                "INPUT": outputs["SelectByExpressionGaps"]["OUTPUT"],
-                "MODE": 0,  # Largest Area
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["EliminateSelectedPolygonsGaps"] is not None
+        if fix_layer_main_pipeline_outputs is not None:
+            outputs.update(fix_layer_main_pipeline_outputs)
 
         # QgsProject.instance().addMapLayer(outputs["EliminateSelectedPolygonsGaps"]['OUTPUT'])
-
-        feedback.setCurrentStep(25)
-        if feedback.isCanceled():
-            return {}
 
         # Refactor fields - names
         refactor_fields_params: list[dict[str, Any]] = self.get_field_mapping(
@@ -899,32 +409,13 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        # Drop field - fid, cat, gap, path
-        outputs["DropFields"] = processing.run(
-            "native:deletecolumn",
-            {
-                "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-                "INPUT": outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"][
-                    "OUTPUT"
-                ],
-                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-            },
-            context=context,
-            feedback=feedback,
-            is_child_algorithm=True,
-        )
-
-        assert outputs["DropFields"] is not None
-
-        feedback.setCurrentStep(27)
-        if feedback.isCanceled():
-            return {}
-
         # Delete holes
         outputs["DeleteHoles"] = processing.run(
             "native:deleteholes",
             {
-                "INPUT": outputs["DropFields"]["OUTPUT"],
+                "INPUT": outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"][
+                    "OUTPUT"
+                ],
                 "MIN_AREA": 0.1,
                 "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
             },
@@ -935,7 +426,7 @@ class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
 
         assert outputs["DeleteHoles"] is not None
 
-        feedback.setCurrentStep(28)
+        feedback.setCurrentStep(27)
         if feedback.isCanceled():
             return {}
 
