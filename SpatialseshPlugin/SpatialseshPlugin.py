@@ -89,6 +89,13 @@ class SpatialseshPlugin(object):
         self.toolbar = self.iface.addToolBar("SpatialSesh")
         self.toolbar.setObjectName("SpatialSeshToolbar")
 
+        # Distance analysis button
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
+            "Distance Analysis",
+            self.run_distance_analysis,
+            parent=self.iface.mainWindow(),
+        )
         # DesignationsDatabase analysis button
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "icon.png"),
@@ -97,17 +104,19 @@ class SpatialseshPlugin(object):
             parent=self.iface.mainWindow(),
         )
 
+        # Fix layer general button
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "icon3.png"),
+            "Fix layer general",
+            self.run_fix_layer_general,
+            parent=self.iface.mainWindow(),
+        )
+
+        # BNG fix layer button
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "favicon.png"),
             "BNG fix layer",
             self.run_BNG_fix,
-            parent=self.iface.mainWindow(),
-        )
-
-        self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
-            "Distance Analysis",
-            self.run_distance_analysis,
             parent=self.iface.mainWindow(),
         )
 
@@ -119,6 +128,9 @@ class SpatialseshPlugin(object):
 
     def run_distance_analysis(self):
         processing.execAlgorithmDialog("Spatialsesh:DistanceAnalysis")
+
+    def run_fix_layer_general(self):
+        processing.execAlgorithmDialog("Spatialsesh:FixLayer_general")
 
     def unload(self):
         if self.provider:
