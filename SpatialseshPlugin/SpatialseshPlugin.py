@@ -32,11 +32,26 @@ __revision__ = "$Format:%H$"
 
 import os
 
+from SpatialseshPlugin.gui.license_options import LicenseOptionsWidget
 from qgis.core import QgsApplication
 from .SpatialseshPlugin_provider import SpatialseshPluginProvider
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
 from qgis import processing
+
+from qgis.gui import QgsOptionsWidgetFactory
+from qgis.PyQt.QtGui import QIcon
+
+
+class LicenseOptionsFactory(QgsOptionsWidgetFactory):
+    def __init__(self):
+        super(QgsOptionsWidgetFactory, self).__init__()
+
+    def icon(self):
+        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "icon.png"))
+
+    def createWidget(self, parent):
+        return LicenseOptionsWidget(parent)
 
 
 class SpatialseshPlugin(object):
@@ -88,6 +103,11 @@ class SpatialseshPlugin(object):
 
         self.toolbar = self.iface.addToolBar("SpatialSesh")
         self.toolbar.setObjectName("SpatialSeshToolbar")
+
+        self.license_options_factory = LicenseOptionsFactory()
+        self.license_options_factory.setTitle("SpatialSesh")
+
+        self.iface.registerOptionsWidgetFactory(self.license_options_factory)
 
         # Distance analysis button
         self.add_action(
@@ -144,3 +164,5 @@ class SpatialseshPlugin(object):
             self.iface.mainWindow().removeToolBar(self.toolbar)
 
             self.toolbar = None
+
+        self.iface.unregisterOptionsWidgetFactory(self.license_options_factory)
