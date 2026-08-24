@@ -2,7 +2,7 @@ from collections.abc import Callable
 from typing import Any, cast
 import uuid
 import json
-from qgis.core import QgsNetworkAccessManager
+from qgis.core import QgsNetworkAccessManager, QgsSettings
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 

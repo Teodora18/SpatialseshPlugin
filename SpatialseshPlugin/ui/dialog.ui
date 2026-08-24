@@ -6,50 +6,180 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
-    <height>150</height>
+    <width>600</width>
+    <height>250</height>
    </rect>
   </property>
 
-  <layout class="QFormLayout" name="formLayout">
+  <layout class="QVBoxLayout" name="verticalLayout">
 
-   <!-- License key -->
-   <item row="0" column="0">
-    <widget class="QLabel" name="licenseKeyLabel">
+   <!-- Section title -->
+   <item>
+    <widget class="QLabel" name="sectionTitleLabel">
      <property name="text">
-      <string>License Key</string>
+      <string>License</string>
+     </property>
+     <property name="styleSheet">
+      <string>font-size: 13px; font-weight: bold;</string>
      </property>
     </widget>
    </item>
 
-   <item row="0" column="1">
-    <widget class="QgsPasswordLineEdit" name="licenseKeyEdit"/>
-   </item>
-
-   <!-- Validate button -->
-   <item row="1" column="1">
-    <widget class="QPushButton" name="validateButton">
-     <property name="text">
-      <string>Validate License</string>
-     </property>
+   <!-- Instructions -->
+   <item>
+    <widget class="QLabel" name="instructionsLabel">
+        <property name="text">
+        <string>To use SpatialSesh plugin, enter your license key below, which you received via email. Your license will be checked online. A successful validation remains valid for 7 days.
+Suppose you have any issues, please contact matt@maplango.com.</string>
+        </property>
+        <property name="wordWrap">
+        <bool>true</bool>
+        </property>
+        <property name="styleSheet">
+        <string>font-style: italic;</string>
+        </property>
     </widget>
    </item>
 
-   <!-- Status -->
-   <item row="2" column="0">
-    <widget class="QLabel" name="statusLabel">
-     <property name="text">
-      <string>Status</string>
+   <!-- Spacer -->
+   <item>
+    <spacer name="topSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
+     <property name="sizeType">
+      <enum>QSizePolicy::Fixed</enum>
+     </property>
+     <property name="sizeHint">
+      <size>
+       <width>20</width>
+       <height>15</height>
+      </size>
+     </property>
+    </spacer>
    </item>
 
-   <item row="2" column="1">
-    <widget class="QLabel" name="statusValueLabel">
-     <property name="text">
-      <string>Not validated</string>
+   <!-- License form -->
+   <item>
+    <layout class="QFormLayout" name="licenseFormLayout">
+
+     <!-- License key -->
+     <item row="0" column="0">
+      <widget class="QLabel" name="licenseKeyLabel">
+       <property name="text">
+        <string>License Key</string>
+       </property>
+      </widget>
+     </item>
+
+     <item row="0" column="1">
+      <widget class="QgsPasswordLineEdit" name="licenseKeyEdit"/>
+     </item>
+
+     <!-- Validate button -->
+     <item row="1" column="1">
+      <widget class="QPushButton" name="validateButton">
+       <property name="text">
+        <string>Validate License</string>
+       </property>
+      </widget>
+     </item>
+
+     <!-- Status label -->
+     <item row="2" column="0">
+      <widget class="QLabel" name="statusLabel">
+       <property name="text">
+        <string>Status</string>
+       </property>
+      </widget>
+     </item>
+
+     <!-- Status -->
+     <item row="2" column="1">
+      <layout class="QVBoxLayout" name="statusLayout">
+
+       <!-- Status text + green check -->
+       <item>
+        <layout class="QHBoxLayout" name="statusHeaderLayout">
+
+         <!-- Green check -->
+         <item>
+          <widget class="QLabel" name="statusIconLabel">
+           <property name="minimumSize">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+           <property name="text">
+            <string>✓</string>
+           </property>
+           <property name="styleSheet">
+            <string>color: green; font-size: 18px; font-weight: bold;</string>
+           </property>
+          </widget>
+         </item>
+
+         <!-- Status text -->
+         <item>
+          <widget class="QLabel" name="statusValueLabel">
+           <property name="text">
+            <string>Not validated</string>
+           </property>
+          </widget>
+         </item>
+
+         <item>
+          <spacer name="statusHorizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeType">
+            <enum>QSizePolicy::Expanding</enum>
+           </property>
+           <property name="sizeHint">
+            <size>
+             <width>20</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+
+        </layout>
+       </item>
+
+       <!-- Valid until -->
+       <item>
+        <widget class="QLabel" name="validUntilValueLabel">
+        <property name="visible">
+            <bool>false</bool>
+        </property>
+        </widget>
+       </item>
+
+      </layout>
+     </item>
+
+    </layout>
+   </item>
+
+   <!-- Bottom spacer -->
+   <item>
+    <spacer name="bottomSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
      </property>
-    </widget>
+     <property name="sizeType">
+      <enum>QSizePolicy::Expanding</enum>
+     </property>
+     <property name="sizeHint">
+      <size>
+       <width>20</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
 
   </layout>
