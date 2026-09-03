@@ -2,7 +2,6 @@
 from typing import Any, Optional
 
 from qgis.core import QgsProcessing
-from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
 from qgis.core import QgsProcessingParameterVectorLayer
@@ -15,9 +14,13 @@ from qgis.core import Qgis
 from qgis import processing
 
 from ..utils.fix_layer import fix_layer_main_pipeline
+from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
-class Fix_layer_general(QgsProcessingAlgorithm):
+class Fix_layer_general(MaplangoLicensedAlgorithm):
+    def __init__(self):
+        super().__init__()
+
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(

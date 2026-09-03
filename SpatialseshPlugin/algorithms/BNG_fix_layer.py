@@ -1,7 +1,6 @@
 from typing import Any, Optional
 
 from qgis.core import QgsProcessing
-from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
 from qgis.core import QgsProcessingParameterEnum
@@ -14,9 +13,13 @@ from qgis.core import Qgis
 from qgis import processing
 
 from ..utils.fix_layer import fix_layer_main_pipeline
+from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
-class BNG_FixLayerAlgorithm(QgsProcessingAlgorithm):
+class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
+    def __init__(self):
+        super().__init__()
+
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterEnum(

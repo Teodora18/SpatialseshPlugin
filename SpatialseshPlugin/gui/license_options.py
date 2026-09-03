@@ -51,6 +51,20 @@ class LicenseOptionsWidget(WidgetUi, QgsOptionsPageWidget):
                 self.licenseKeyEdit.text().strip(),
             )
 
+        # license_key = self.licenseKeyEdit.text().strip()
+        # if not license_key:
+        #     self.statusValueLabel.setText("Please enter a license key.")
+        #     return
+
+        # if self.recently_validated():
+        #     self.settings.setValue(
+        #         "maplango/license_key",
+        #         license_key,
+        #     )
+        #     return
+
+        # self.validate_license()
+
     def validate_license(self):
         license_key = self.licenseKeyEdit.text().strip()
 
@@ -119,3 +133,20 @@ class LicenseOptionsWidget(WidgetUi, QgsOptionsPageWidget):
         )
 
         print(f"Error! {error}")
+
+    def recently_validated(self) -> bool:
+        checked_at = self.settings.value(
+            "maplango/licenseLastCheckedAt",
+            "",
+            type=str,
+        )
+
+        if not checked_at:
+            return False
+
+        try:
+            checked_at = datetime.fromisoformat(checked_at)
+        except (ValueError, TypeError):
+            return False
+
+        return (datetime.now(timezone.utc) - checked_at) < timedelta(minutes=5)
