@@ -95,10 +95,18 @@ class LicenseSeatApi:
             try:
                 json_content = json.loads(raw_content)
             except Exception as err:
-                if reply.error() != QNetworkReply.NetworkError.NoError:
+                if reply.error() in (
+                    QNetworkReply.NetworkError.HostNotFoundError,
+                    QNetworkReply.NetworkError.NetworkSessionFailedError,
+                    QNetworkReply.NetworkError.TimeoutError,
+                ):
                     on_error(
-                        "Failed to connect to license validation platform, reason: ",
-                        reply.errorString(),
+                        "Could not connect to the license validation platform. "
+                        "Please check your internet connection and try again."
+                    )
+                elif reply.error() != QNetworkReply.NetworkError.NoError:
+                    on_error(
+                        f"Failed to connect to license validation platform, reason: {reply.errorString()}"
                     )
                 else:
                     on_error(
@@ -106,19 +114,41 @@ class LicenseSeatApi:
                     )
                 return
 
-            if reply.error() != QNetworkReply.NetworkError.NoError:
+            if (
+                reply.error() != QNetworkReply.NetworkError.NoError
+                or "error" in json_content
+            ):
                 error_code = json_content.get("error", {}).get("code")
-
-                if error_code is None:
-                    on_error("Unknown error from the licence validation platform!")
-                elif error_code == "license_not_found":
-                    on_error("Invalid license. Please check for typos!")
-                else:
-                    on_error("Unknown error from the licence validation platform!")
-
+                print(json_content)
+            else:
+                on_success(json_content)
                 return
 
-            on_success(json_content)
+            if error_code is None:
+                on_error("Unknown error from the licence validation platform!")
+
+            elif error_code == "license_not_found":
+                on_error("Invalid license. Please check for typos!")
+
+            elif error_code == "license_expired":
+                on_error("This license has expired. Please renew your license!")
+            elif error_code == "revoked":
+                on_error(
+                    "This license has been revoked. Please contact support at matt@maplango.com!"
+                )
+            elif error_code == "seat_limit_exceeded":
+                on_error(
+                    "This license has reached its maximum number of activated devices!"
+                )
+            else:
+                error_message = json_content.get("error", {}).get("message")
+
+                on_error(
+                    f"Unknown license error from the licence validation platform: `{error_code}`"
+                    + (f" with error message: {error_message}" if error_message else "")
+                )
+
+            return
 
         reply = self.post(
             "licenses/activate",
