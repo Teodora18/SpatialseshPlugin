@@ -31,9 +31,11 @@ __copyright__ = "(C) 2026 by Teodora Koleva"
 __revision__ = "$Format:%H$"
 
 from qgis.core import QgsProcessingProvider
-from .algorithms.NearestNeighbourDD import NearestNeighbourDDAlgorithm
+from .algorithms.DesignatedSite_DistanceAndBearing import (
+    DesignatedSite_DistanceAndBearingAlgorithm,
+)
 from .algorithms.BNG_fix_layer import BNG_FixLayerAlgorithm
-from .algorithms.DistanceAnalysis import DistanceAnalysisAlgorithm
+from .algorithms.DistanceAndBearing import DistanceAndBearingAlgorithm
 from .algorithms.Fix_layer_general import Fix_layer_general
 
 
@@ -52,9 +54,9 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         pass
 
     def loadAlgorithms(self):
-        self.addAlgorithm(NearestNeighbourDDAlgorithm())
+        self.addAlgorithm(DesignatedSite_DistanceAndBearingAlgorithm())
         self.addAlgorithm(BNG_FixLayerAlgorithm())
-        self.addAlgorithm(DistanceAnalysisAlgorithm())
+        self.addAlgorithm(DistanceAndBearingAlgorithm())
         self.addAlgorithm(Fix_layer_general())
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())

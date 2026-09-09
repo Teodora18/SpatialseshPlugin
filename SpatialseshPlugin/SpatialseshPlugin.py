@@ -169,14 +169,14 @@ class SpatialseshPlugin(object):
         # Distance analysis button
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
-            "Distance Analysis",
+            "Distance and bearing",
             self.run_distance_analysis,
             parent=self.iface.mainWindow(),
         )
         # DesignationsDatabase analysis button
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "icon.png"),
-            "Designations",
+            "Designation site distance and bearing",
             self.run_designations,
             parent=self.iface.mainWindow(),
         )
@@ -192,19 +192,19 @@ class SpatialseshPlugin(object):
         # BNG fix layer button
         self.add_action(
             os.path.join(os.path.dirname(__file__), "icons", "favicon.png"),
-            "BNG fix layer",
+            "Fix layer BNG",
             self.run_BNG_fix,
             parent=self.iface.mainWindow(),
         )
 
     def run_designations(self):
-        processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
+        processing.execAlgorithmDialog("Spatialsesh:DesignatedSiteDistanceAndBearing")
 
     def run_BNG_fix(self):
-        processing.execAlgorithmDialog("Spatialsesh:BNG_FixLayer")
+        processing.execAlgorithmDialog("Spatialsesh:FixLayer_BNG")
 
     def run_distance_analysis(self):
-        processing.execAlgorithmDialog("Spatialsesh:DistanceAnalysis")
+        processing.execAlgorithmDialog("Spatialsesh:DistanceAndBearing")
 
     def run_fix_layer_general(self):
         processing.execAlgorithmDialog("Spatialsesh:FixLayer_general")

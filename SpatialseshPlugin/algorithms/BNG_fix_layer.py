@@ -1,16 +1,20 @@
 from typing import Any, Optional
 
+import os
+
 from qgis.core import QgsProcessing
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
 from qgis.core import QgsProcessingParameterEnum
-from qgis.core import QgsProcessingParameterVectorLayer
+from qgis.core import QgsProcessingParameterFeatureSource
 from qgis.core import QgsProcessingParameterNumber
 from qgis.core import QgsProcessingParameterCrs
 from qgis.core import QgsProcessingParameterFile
 from qgis.core import QgsProcessingParameterFeatureSink
 from qgis.core import Qgis
 from qgis import processing
+
+from qgis.PyQt.QtGui import QIcon
 
 from ..utils.fix_layer import fix_layer_main_pipeline
 from ..utils.license_manager import MaplangoLicensedAlgorithm
@@ -35,17 +39,17 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             )
         )
         self.addParameter(
-            QgsProcessingParameterVectorLayer(
-                "polygon_layer_to_clean",
-                "Polygon layer to clean",
+            QgsProcessingParameterFeatureSource(
+                "polygon_layer_to_fix",
+                "Polygon layer to fix",
                 types=[Qgis.ProcessingSourceType.VectorPolygon],
                 defaultValue=None,
             )
         )
         self.addParameter(
             QgsProcessingParameterNumber(
-                "filter_small_polygons_size_m2",
-                "Filter small polygons size (m2)",
+                "minimum_mappable_unit_m2",
+                "Minimum Mappable Unit (m2)",
                 type=Qgis.ProcessingNumberParameterType.Double,
                 defaultValue=10,
             )
@@ -60,21 +64,30 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterCrs(
-                "crs_to_reproject", "CRS to reproject", defaultValue="EPSG:27700"
+                "output_crs", "Output CRS", defaultValue="EPSG:27700"
             )
         )
-        self.addParameter(
-            QgsProcessingParameterFile(
-                "temporary_file_path_before_cleaning",
-                "File path for interim results",
-                behavior=Qgis.ProcessingFileParameterBehavior.File,
-                fileFilter="All files (*.*)",
-            )
+        interim_results_parameter = QgsProcessingParameterFile(
+            "set_file_path_for_interim_results",
+            "Set file path for interim results",
+            behavior=Qgis.ProcessingFileParameterBehavior.File,
+            fileFilter="All files (*.*)",
+            defaultValue=os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "..",
+                    "interim_results.gpkg",
+                )
+            ),
         )
+        interim_results_parameter.setFlags(
+            interim_results_parameter.flags() | Qgis.ProcessingParameterFlag.Advanced
+        )
+        self.addParameter(interim_results_parameter)
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                "Final_cleaned_output",
-                "final_cleaned_output",
+                "Final_fixed_output",
+                "Final fixed output",
                 type=Qgis.ProcessingSourceType.VectorPolygon,
                 createByDefault=True,
                 supportsAppend=True,
@@ -374,11 +387,11 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
         # Fix layer with the main pipeline of algorithms
 
         fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
-            parameters["polygon_layer_to_clean"],
-            parameters["filter_small_polygons_size_m2"],
+            parameters["polygon_layer_to_fix"],
+            parameters["minimum_mappable_unit_m2"],
             parameters["snapping_tolerance_m"],
-            parameters["crs_to_reproject"],
-            parameters["temporary_file_path_before_cleaning"],
+            parameters["output_crs"],
+            parameters["set_file_path_for_interim_results"],
             context,
             feedback,
             starting_step=1,
@@ -443,7 +456,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
                 "FIELD_TYPE": 1,  # Integer (32 bit)
                 "FORMULA": "area($geometry)",
                 "INPUT": outputs["DeleteHoles"]["OUTPUT"],
-                "OUTPUT": parameters["Final_cleaned_output"],
+                "OUTPUT": parameters["Final_fixed_output"],
             },
             context=context,
             feedback=feedback,
@@ -452,17 +465,39 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["FieldCalculatorArea"] is not None
 
-        results["Final_cleaned_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
+        results["Final_fixed_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
         context.layerToLoadOnCompletionDetails(
-            results["Final_cleaned_output"]
-        ).name = "Final_cleaned_output"
+            results["Final_fixed_output"]
+        ).name = "Final_fixed_output"
         return results
 
+    def icon(self) -> QIcon:
+        return QIcon(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "icons",
+                "icon.png",
+            )
+        )
+
+    def shortHelpString(self) -> str:
+        text = """<b>General:</b><br>\
+    Cleans and fixes a BNG polygon layer by repairing invalid geometries, removing duplicate and small polygons, snapping geometries, and eliminating gaps. The output fields are configured according to the selected BNG layer type (Master, Baseline, or Proposed).<br><br>\
+    <b>Parameters:</b><br>\
+    The following parameters must be defined to execute the algorithm:
+    <ul><li>Layer type: Select whether the input layer is a Master, Baseline, or Proposed BNG layer.</li><li>Polygon layer to fix</li><li>Minimum Mappable Unit (m2)</li><li>Snapping tolerance (m)</li><li>Output CRS</li></ul><br>\
+    <b>Output:</b><br>\
+    Produces a cleaned polygon layer with repaired geometries, small polygons and gaps removed, and fields standardized according to the selected BNG layer type.
+    """
+
+        return text
+
     def name(self) -> str:
-        return "BNG_FixLayer"
+        return "FixLayer_BNG"
 
     def displayName(self) -> str:
-        return "BNG_FixLayer"
+        return "Fix layer BNG"
 
     def group(self) -> str:
         return ""
