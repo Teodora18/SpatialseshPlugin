@@ -32,11 +32,31 @@ __revision__ = "$Format:%H$"
 
 import os
 
+from typing import Any
+from datetime import datetime, timezone
 from qgis.core import QgsApplication
-from .SpatialseshPlugin_provider import SpatialseshPluginProvider
+from qgis.core import QgsSettings
 from qgis.PyQt.QtWidgets import QAction
 from qgis.PyQt.QtGui import QIcon
 from qgis import processing
+
+from qgis.gui import QgsOptionsWidgetFactory
+
+from .SpatialseshPlugin_provider import SpatialseshPluginProvider
+from SpatialseshPlugin.gui.license_options import LicenseOptionsWidget
+
+from .licenseseat_api import API_KEY, API_SLUG, LicenseSeatApi
+
+
+class LicenseOptionsFactory(QgsOptionsWidgetFactory):
+    def __init__(self):
+        super(QgsOptionsWidgetFactory, self).__init__()
+
+    def icon(self):
+        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "icon.png"))
+
+    def createWidget(self, parent):
+        return LicenseOptionsWidget(parent)
 
 
 class SpatialseshPlugin(object):
@@ -45,6 +65,11 @@ class SpatialseshPlugin(object):
         self.provider = None
         self.actions = []
         self.toolbar = None
+
+        self.license_api = LicenseSeatApi(
+            API_SLUG,
+            API_KEY,
+        )
 
     def initProcessing(self):
         """Init Processing provider for QGIS >= 3.8."""
@@ -83,7 +108,59 @@ class SpatialseshPlugin(object):
 
         return action
 
+    def on_license_check_success(
+        self,
+        payload: dict[str, Any],
+    ) -> None:
+        checked_at = datetime.now(timezone.utc)
+
+        QgsSettings().setValue(
+            "maplango/license_valid",
+            True,
+        )
+
+        QgsSettings().setValue(
+            "maplango/licenseLastCheckedAt",
+            checked_at.isoformat(),
+        )
+
+    def on_license_check_error(
+        self,
+        error: str,
+    ) -> None:
+        QgsSettings().setValue(
+            "maplango/license_valid",
+            False,
+        )
+
+        print(f"License validation failed: {error}")
+
+    def validate_saved_license(self) -> None:
+        license_key = (
+            QgsSettings()
+            .value(
+                "maplango/license_key",
+                "",
+                type=str,
+            )
+            .strip()
+        )
+
+        if not license_key:
+            return
+
+        self.license_api.activate_licence(
+            license_key,
+            self.on_license_check_success,
+            self.on_license_check_error,
+        )
+
     def initGui(self):
+        self.validate_saved_license()
+        self.license_options_factory = LicenseOptionsFactory()
+        self.license_options_factory.setTitle("SpatialSesh")
+        self.iface.registerOptionsWidgetFactory(self.license_options_factory)
+
         self.initProcessing()
 
         self.toolbar = self.iface.addToolBar("SpatialSesh")
@@ -144,3 +221,5 @@ class SpatialseshPlugin(object):
             self.iface.mainWindow().removeToolBar(self.toolbar)
 
             self.toolbar = None
+
+        self.iface.unregisterOptionsWidgetFactory(self.license_options_factory)
