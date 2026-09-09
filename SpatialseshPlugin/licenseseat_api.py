@@ -130,7 +130,7 @@ class LicenseSeatApi:
             elif error_code == "license_not_found":
                 on_error("Invalid license. Please check for typos!")
 
-            elif error_code == "license_expired":
+            elif error_code == "expired":
                 on_error("This license has expired. Please renew your license!")
             elif error_code == "revoked":
                 on_error(
