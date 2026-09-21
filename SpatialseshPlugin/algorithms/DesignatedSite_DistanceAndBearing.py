@@ -1,5 +1,7 @@
 from typing import Any, Optional
 
+import os
+
 from qgis.core import QgsProcessing
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
@@ -10,19 +12,21 @@ from qgis.core import QgsExpression
 from qgis.core import Qgis
 from qgis import processing
 
+from qgis.PyQt.QtGui import QIcon
+
 from ..utils.calculate_direction import calculate_distance_and_direction
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
-class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
+class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
     def __init__(self):
         super().__init__()
 
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                "ecological_merged",
-                "Ecological merged",
+                "designations_merged",
+                "Designations merged",
                 types=[Qgis.ProcessingSourceType.VectorPolygon],
                 defaultValue=None,
             )
@@ -30,7 +34,7 @@ class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
                 "red_line_boundary",
-                "Red line Boundary",
+                "Red Line Boundary",
                 types=[
                     Qgis.ProcessingSourceType.VectorLine,
                     Qgis.ProcessingSourceType.VectorPolygon,
@@ -49,7 +53,7 @@ class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 "NationalAndLocal",
-                "National and local",
+                "National and Local sites",
                 type=Qgis.ProcessingSourceType.VectorPolygon,
                 createByDefault=True,
                 supportsAppend=True,
@@ -59,7 +63,7 @@ class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
         self.addParameter(
             QgsProcessingParameterFeatureSink(
                 "International",
-                "International",
+                "International sites",
                 type=Qgis.ProcessingSourceType.VectorPolygon,
                 createByDefault=True,
                 supportsAppend=True,
@@ -79,7 +83,7 @@ class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
 
         # Calculate join attributes by nearest, azimuth and bearing
         direction_outputs = calculate_distance_and_direction(
-            parameters["ecological_merged"],
+            parameters["designations_merged"],
             parameters["red_line_boundary"],
             parameters["maximim_distance_m"],
             context,
@@ -188,11 +192,32 @@ class NearestNeighbourDDAlgorithm(MaplangoLicensedAlgorithm):
             feedback.setProgressText(f"{designation} unnecessary fields dropped.")
         return results
 
+    def icon(self) -> QIcon:
+        return QIcon(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "icons",
+                "Distance_bearing_designated.svg",
+            )
+        )
+
+    def shortHelpString(self) -> str:
+        text = """ <b>General:</b><br>\
+        This algorithm calculates the Distance and Bearing from the Red Line Boundary to the Spatialsesh Designations merged layer that are within the Maximum distance. It assigns Compass letters, and orders the results by distance from RLB. It separates the results into 2 layers; 'International' and 'National and Local' designated sites.<br><br>\
+        <b>Parameters:</b><br>\
+       The following parameters must be defined to execute the algorithm:
+        <ul><li>Designations merged</li><li>Red Line Boundary </li><li>Maximum distance (m)</li></ul><br>\
+        <b>Output:</b><br>\
+        The algorithm produces two polygon layers containing the relevant Designated Sites: <ul> <li>National and Local sites</li> <li>International sites</li> </ul> Each output contains additional fields for distance, bearing, and compass letters, with features ordered by distance to the nearest Red Line Boundary.<br>\
+        """
+        return text
+
     def name(self) -> str:
-        return "NearestNeighbourDD"
+        return "DesignatedSiteDistanceAndBearing"
 
     def displayName(self) -> str:
-        return "NearestNeighbourDD"
+        return "Designated site distance and bearing"
 
     def group(self) -> str:
         return ""

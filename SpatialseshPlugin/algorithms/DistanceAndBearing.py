@@ -1,4 +1,5 @@
 from typing import Any, Optional
+import os
 
 from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessingContext
@@ -8,11 +9,12 @@ from qgis.core import QgsProcessingParameterNumber
 from qgis.core import QgsProcessingParameterFeatureSink
 from qgis.core import Qgis
 from qgis import processing
+from qgis.PyQt.QtGui import QIcon
 
 from ..utils.calculate_direction import calculate_distance_and_direction
 
 
-class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
+class DistanceAndBearingAlgorithm(QgsProcessingAlgorithm):
     def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
         self.addParameter(
             QgsProcessingParameterVectorLayer(
@@ -24,8 +26,8 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterVectorLayer(
-                "red_line_boundary",
-                "Red line Boundary",
+                "site_boundary",
+                "Site boundary",
                 types=[
                     Qgis.ProcessingSourceType.VectorLine,
                     Qgis.ProcessingSourceType.VectorPolygon,
@@ -43,8 +45,8 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
         )
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                "Result",
                 "result",
+                "Result",
                 type=Qgis.ProcessingSourceType.VectorPolygon,
                 createByDefault=True,
                 defaultValue=None,
@@ -63,7 +65,7 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
 
         direction_outputs = calculate_distance_and_direction(
             parameters["input_layer"],
-            parameters["red_line_boundary"],
+            parameters["site_boundary"],
             parameters["maximim_distance_m"],
             context,
             feedback,
@@ -80,7 +82,7 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
                 "EXPRESSION": "distance",
                 "INPUT": outputs["FieldCalculatorBearing"]["OUTPUT"],
                 "NULLS_FIRST": False,
-                "OUTPUT": parameters["Result"],
+                "OUTPUT": parameters["result"],
             },
             context=context,
             feedback=feedback,
@@ -91,14 +93,37 @@ class DistanceAnalysisAlgorithm(QgsProcessingAlgorithm):
 
         feedback.setProgressText("Features ordered by distance.")
 
-        results["Result"] = outputs["OrderByExpression"]["OUTPUT"]
+        results["result"] = outputs["OrderByExpression"]["OUTPUT"]
+        context.layerToLoadOnCompletionDetails(results["result"]).name = "Result"
         return results
 
+    def icon(self) -> QIcon:
+        return QIcon(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "icons",
+                "Distance_bearing.svg",
+            )
+        )
+
+    def shortHelpString(self) -> str:
+        text = """ <b>General:</b><br>\
+        This algorithm calculates the Distance and Bearing from the Site Boundary to the Input features that are within the Maximum distance, assigns Compass letters, and orders the results by Distance.<br><br>
+        <b>Parameters:</b><br>\
+       The following parameters must be defined to execute the algorithm:
+        <ul><li>Input layer</li><li>Site boundary </li><li>Maximum Distance (m)</li></ul><br>\
+        <b>Output:</b><br>\
+        The output of the algorithm is a polygon layer with the features from the Input layer that within the Maximum distance constraint with additional fields in the attribute table for Distance, Bearing and Compass letters.
+<br>\
+        """
+        return text
+
     def name(self) -> str:
-        return "DistanceAnalysis"
+        return "DistanceAndBearing"
 
     def displayName(self) -> str:
-        return "DistanceAnalysis"
+        return "Distance and bearing"
 
     def group(self) -> str:
         return ""

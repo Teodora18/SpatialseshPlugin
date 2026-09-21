@@ -1,11 +1,11 @@
 [general]
 name=SpatialseshPlugin
-email=koleva.n.teodora@gmail.com
+email=matt@maplango.com
 author=Teodora Koleva
 qgisMinimumVersion=3.22
-description=Spatialsesh plugin with useful processing tools.
-about=This plugin is developed for automatization of complex processing algorithms.
-version=0.1
+description=The Spatialsesh plugin provides a set of tools to support ecological Desk Studies and BNG Analysis.
+about=This plugin is developed for automatization of complex processing tasks.
+version=1.0
 repository=https://github.com/Teodora18/SpatialseshPlugin
 tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
 

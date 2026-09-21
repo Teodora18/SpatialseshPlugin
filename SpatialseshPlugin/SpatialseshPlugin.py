@@ -32,8 +32,7 @@ __revision__ = "$Format:%H$"
 
 import os
 
-from typing import Any
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from qgis.core import QgsApplication
 from qgis.core import QgsSettings
 from qgis.PyQt.QtWidgets import QAction
@@ -53,7 +52,7 @@ class LicenseOptionsFactory(QgsOptionsWidgetFactory):
         super(QgsOptionsWidgetFactory, self).__init__()
 
     def icon(self):
-        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "icon.png"))
+        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "favicon.png"))
 
     def createWidget(self, parent):
         return LicenseOptionsWidget(parent)
@@ -108,52 +107,76 @@ class SpatialseshPlugin(object):
 
         return action
 
-    def on_license_check_success(
-        self,
-        payload: dict[str, Any],
-    ) -> None:
-        checked_at = datetime.now(timezone.utc)
+    # def on_license_check_success(
+    #     self,
+    #     payload: dict[str, Any],
+    # ) -> None:
+    #     checked_at = datetime.now(timezone.utc)
 
-        QgsSettings().setValue(
-            "maplango/license_valid",
-            True,
-        )
+    #     QgsSettings().setValue(
+    #         "maplango/license_valid",
+    #         True,
+    #     )
 
-        QgsSettings().setValue(
-            "maplango/licenseLastCheckedAt",
-            checked_at.isoformat(),
-        )
+    #     QgsSettings().setValue(
+    #         "maplango/licenseLastCheckedAt",
+    #         checked_at.isoformat(),
+    #     )
 
-    def on_license_check_error(
-        self,
-        error: str,
-    ) -> None:
-        QgsSettings().setValue(
-            "maplango/license_valid",
-            False,
-        )
+    # def on_license_check_error(
+    #     self,
+    #     error: str,
+    # ) -> None:
+    #     QgsSettings().setValue(
+    #         "maplango/license_valid",
+    #         False,
+    #     )
 
-        print(f"License validation failed: {error}")
+    #     print(f"License validation failed: {error}")
 
     def validate_saved_license(self) -> None:
-        license_key = (
-            QgsSettings()
-            .value(
-                "maplango/license_key",
-                "",
-                type=str,
-            )
-            .strip()
-        )
+        settings = QgsSettings()
+
+        license_key = settings.value(
+            "maplango/license_key",
+            "",
+            type=str,
+        ).strip()
 
         if not license_key:
             return
 
-        self.license_api.activate_licence(
-            license_key,
-            self.on_license_check_success,
-            self.on_license_check_error,
+        license_valid = settings.value(
+            "maplango/license_valid",
+            False,
+            type=bool,
         )
+
+        last_checked = settings.value(
+            "maplango/licenseLastCheckedAt",
+            "",
+            type=str,
+        )
+
+        is_valid = False
+
+        if license_valid and last_checked:
+            try:
+                checked_at = datetime.fromisoformat(last_checked)
+                valid_until = checked_at + timedelta(days=7)
+
+                if datetime.now(timezone.utc) < valid_until:
+                    is_valid = True
+
+            except ValueError:
+                pass
+
+        if not is_valid:
+            self.iface.messageBar().pushWarning(
+                "SpatialSesh",
+                "Your SpatialSesh license is not active. "
+                "Please validate your license in Settings → Options → SpatialSesh.",
+            )
 
     def initGui(self):
         self.validate_saved_license()
@@ -168,22 +191,24 @@ class SpatialseshPlugin(object):
 
         # Distance analysis button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
-            "Distance Analysis",
+            os.path.join(os.path.dirname(__file__), "icons", "Distance_bearing.svg"),
+            "Distance and bearing",
             self.run_distance_analysis,
             parent=self.iface.mainWindow(),
         )
         # DesignationsDatabase analysis button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon.png"),
-            "Designations",
+            os.path.join(
+                os.path.dirname(__file__), "icons", "Distance_bearing_designated.svg"
+            ),
+            "Designation site distance and bearing",
             self.run_designations,
             parent=self.iface.mainWindow(),
         )
 
         # Fix layer general button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon3.png"),
+            os.path.join(os.path.dirname(__file__), "icons", "Fix_layer_general.svg"),
             "Fix layer general",
             self.run_fix_layer_general,
             parent=self.iface.mainWindow(),
@@ -191,23 +216,23 @@ class SpatialseshPlugin(object):
 
         # BNG fix layer button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "favicon.png"),
-            "BNG fix layer",
+            os.path.join(os.path.dirname(__file__), "icons", "Fix_layer_BNG.svg"),
+            "Fix layer BNG",
             self.run_BNG_fix,
             parent=self.iface.mainWindow(),
         )
 
-    def run_designations(self):
-        processing.execAlgorithmDialog("Spatialsesh:NearestNeighbourDD")
-
-    def run_BNG_fix(self):
-        processing.execAlgorithmDialog("Spatialsesh:BNG_FixLayer")
-
     def run_distance_analysis(self):
-        processing.execAlgorithmDialog("Spatialsesh:DistanceAnalysis")
+        processing.execAlgorithmDialog("Spatialsesh:DistanceAndBearing")
+
+    def run_designations(self):
+        processing.execAlgorithmDialog("Spatialsesh:DesignatedSiteDistanceAndBearing")
 
     def run_fix_layer_general(self):
         processing.execAlgorithmDialog("Spatialsesh:FixLayer_general")
+
+    def run_BNG_fix(self):
+        processing.execAlgorithmDialog("Spatialsesh:FixLayer_BNG")
 
     def unload(self):
         if self.provider:
