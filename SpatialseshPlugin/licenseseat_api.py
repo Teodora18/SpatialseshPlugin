@@ -6,8 +6,8 @@ from qgis.core import QgsNetworkAccessManager, QgsSettings
 from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 
-API_SLUG = "spatialseshplugin"
-API_KEY = "pk_live_34avXrXppqjRoygHHZUFcRqecaj9c1zew"
+API_SLUG = "spatialseshplugin-987471"
+API_KEY = "pk_live_5zpUS5HYpjTtikijqYSg7yMWi5WuaddiH"
 
 
 def noop(*args, **kwargs):
