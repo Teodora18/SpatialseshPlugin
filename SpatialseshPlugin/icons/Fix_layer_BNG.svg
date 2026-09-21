@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="a" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" width="1000" height="1000" viewBox="0 0 1000 1000">
+  <g>
+    <polygon points="95.098 95.098 807.021 95.098 346.504 339.292 505.137 623.635 95.098 852.394 95.098 95.098" fill="#00b2ab"/>
+    <polygon points="95.098 904.902 95.098 95.098 904.902 95.098 409.37 357.859 567.522 641.339 95.098 904.902" fill="none" stroke="#ff2d00" stroke-linejoin="bevel" stroke-width="20"/>
+  </g>
+  <polygon points="189.215 904.902 634.364 656.557 472.81 376.121 904.902 147.001 904.902 904.902 189.215 904.902" fill="#202626"/>
+  <rect x="505.987" y="573.725" width="130.874" height="130.874" fill="#ff2d00" stroke="#ff2d00" stroke-miterlimit="10"/>
+  <rect x="343.933" y="292.422" width="130.874" height="130.874" fill="#ff2d00" stroke="#ff2d00" stroke-miterlimit="10"/>
+  <polyline points="95.098 904.902 567.522 641.339 409.37 357.859 904.902 95.098" fill="none" stroke="#ff2d00" stroke-linejoin="bevel" stroke-width="20"/>
+  <rect x="95.098" y="95.098" width="809.804" height="809.804" fill="none" stroke="#ff2d00" stroke-miterlimit="10" stroke-width="20"/>
+</svg>

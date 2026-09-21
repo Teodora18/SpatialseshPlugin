@@ -177,18 +177,19 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
                 os.path.dirname(__file__),
                 "..",
                 "icons",
-                "icon.png",
+                "Fix_layer_general.svg",
             )
         )
 
     def shortHelpString(self) -> str:
         text = """<b>General:</b><br>\
-This algorithm cleans and repairs a polygon layer by fixing invalid geometries, removing duplicate and small polygons, snapping nearby geometries, eliminating gaps, and applying additional geometry corrections.<br><br>\
+This algorithm cleans and repairs a polygon layer by fixing invalid geometries, removing duplicate and small polygons, snapping nearby geometries, eliminating gaps and duplicate geometires, and applying additional geometry corrections.<br><br>\
  <b>Parameters:</b><br>\
  The following parameters must be defined to execute the algorithm:
-<ul><li>Polygon layer to fix</li><li> Minimum Mappable Unit (m2)</li><li>Snapping tolerance (m)</li><li>Output CRS</li><li>Set file path for interim results – <b>Advanced parameter with a default value</b></li></ul><br>\
+<ul> <li>Polygon layer to fix</li> <li> Minimum Mappable Unit (m2)</li> <li>Snapping tolerance (m)</li> <li>Output CRS</li> <li> Set file path for interim results - <b>Advanced parameter with a default value</b></li> </ul><br>\
 <b>Output:</b><br>\
- The algorithm produces a fixed polygon layer with repaired geometries, removed small polygons and gaps, and an additional <i>Area</i> field containing the area of each resulting feature."""
+ The algorithm produces a fixed polygon layer with repaired geometries, removed small polygons, slivers and gaps, and an additional <i>Area</i> field containing the area of each resulting feature.<br>\
+"""
 
         return text
 

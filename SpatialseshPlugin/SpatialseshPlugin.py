@@ -52,7 +52,7 @@ class LicenseOptionsFactory(QgsOptionsWidgetFactory):
         super(QgsOptionsWidgetFactory, self).__init__()
 
     def icon(self):
-        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "icon.png"))
+        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "favicon.png"))
 
     def createWidget(self, parent):
         return LicenseOptionsWidget(parent)
@@ -191,14 +191,16 @@ class SpatialseshPlugin(object):
 
         # Distance analysis button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon2.png"),
+            os.path.join(os.path.dirname(__file__), "icons", "Distance_bearing.svg"),
             "Distance and bearing",
             self.run_distance_analysis,
             parent=self.iface.mainWindow(),
         )
         # DesignationsDatabase analysis button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon.png"),
+            os.path.join(
+                os.path.dirname(__file__), "icons", "Distance_bearing_designated.svg"
+            ),
             "Designation site distance and bearing",
             self.run_designations,
             parent=self.iface.mainWindow(),
@@ -206,7 +208,7 @@ class SpatialseshPlugin(object):
 
         # Fix layer general button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "icon3.png"),
+            os.path.join(os.path.dirname(__file__), "icons", "Fix_layer_general.svg"),
             "Fix layer general",
             self.run_fix_layer_general,
             parent=self.iface.mainWindow(),
@@ -214,23 +216,23 @@ class SpatialseshPlugin(object):
 
         # BNG fix layer button
         self.add_action(
-            os.path.join(os.path.dirname(__file__), "icons", "favicon.png"),
+            os.path.join(os.path.dirname(__file__), "icons", "Fix_layer_BNG.svg"),
             "Fix layer BNG",
             self.run_BNG_fix,
             parent=self.iface.mainWindow(),
         )
 
-    def run_designations(self):
-        processing.execAlgorithmDialog("Spatialsesh:DesignatedSiteDistanceAndBearing")
-
-    def run_BNG_fix(self):
-        processing.execAlgorithmDialog("Spatialsesh:FixLayer_BNG")
-
     def run_distance_analysis(self):
         processing.execAlgorithmDialog("Spatialsesh:DistanceAndBearing")
 
+    def run_designations(self):
+        processing.execAlgorithmDialog("Spatialsesh:DesignatedSiteDistanceAndBearing")
+
     def run_fix_layer_general(self):
         processing.execAlgorithmDialog("Spatialsesh:FixLayer_general")
+
+    def run_BNG_fix(self):
+        processing.execAlgorithmDialog("Spatialsesh:FixLayer_BNG")
 
     def unload(self):
         if self.provider:

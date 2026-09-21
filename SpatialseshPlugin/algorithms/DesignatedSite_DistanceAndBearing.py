@@ -198,18 +198,18 @@ class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
                 os.path.dirname(__file__),
                 "..",
                 "icons",
-                "icon.png",
+                "Distance_bearing_designated.svg",
             )
         )
 
     def shortHelpString(self) -> str:
         text = """ <b>General:</b><br>\
-        This algorithm identifies the nearest Red Line Boundary for each designated site, calculates its distance and direction, assigns a compass bearing, separates the results into International and National and Local sites, and orders the results by distance.<br><br>\
+        This algorithm calculates the Distance and Bearing from the Red Line Boundary to the Spatialsesh Designations merged layer that are within the Maximum distance. It assigns Compass letters, and orders the results by distance from RLB. It separates the results into 2 layers; 'International' and 'National and Local' designated sites.<br><br>\
         <b>Parameters:</b><br>\
        The following parameters must be defined to execute the algorithm:
         <ul><li>Designations merged</li><li>Red Line Boundary </li><li>Maximum distance (m)</li></ul><br>\
         <b>Output:</b><br>\
-        The algorithm produces two polygon layers containing the relevant ecological sites: <ul> <li>National and Local sites</li> <li>International sites</li> </ul> Each output contains fields for distance, azimuth and bearing, with features ordered by distance to the nearest Red Line Boundary.<br>\
+        The algorithm produces two polygon layers containing the relevant Designated Sites: <ul> <li>National and Local sites</li> <li>International sites</li> </ul> Each output contains additional fields for distance, bearing, and compass letters, with features ordered by distance to the nearest Red Line Boundary.<br>\
         """
         return text
 

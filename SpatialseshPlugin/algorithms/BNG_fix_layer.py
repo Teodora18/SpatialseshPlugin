@@ -477,18 +477,18 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
                 os.path.dirname(__file__),
                 "..",
                 "icons",
-                "icon.png",
+                "Fix_layer_BNG.svg",
             )
         )
 
     def shortHelpString(self) -> str:
         text = """<b>General:</b><br>\
-    Cleans and fixes a BNG polygon layer by repairing invalid geometries, removing duplicate and small polygons, snapping geometries, and eliminating gaps. The output fields are configured according to the selected BNG layer type (Master, Baseline, or Proposed).<br><br>\
+    Cleans and fixes a Spatialsesh BNG polygon layer by repairing invalid geometries, removing duplicate and small polygons, snapping geometries, and eliminating gaps. The output fields are configured according to the selected BNG layer type selected (Master, Baseline, or Proposed) so that the output can be exported to the NE metric.<br><br>\
     <b>Parameters:</b><br>\
     The following parameters must be defined to execute the algorithm:
-    <ul><li>Layer type: Select whether the input layer is a Master, Baseline, or Proposed BNG layer.</li><li>Polygon layer to fix</li><li>Minimum Mappable Unit (m2)</li><li>Snapping tolerance (m)</li><li>Output CRS</li></ul><br>\
+    <ul><li>Layer type: Select whether the input layer is a Master, Baseline, or Proposed BNG layer.</li><li>Polygon layer to fix</li><li>Minimum Mappable Unit (m2)</li><li>Snapping tolerance (m)</li><li>Output CRS</li><li> Set file path for interim results - <b>Advanced parameter with a default value</b></li> </ul><br>\
     <b>Output:</b><br>\
-    Produces a cleaned polygon layer with repaired geometries, small polygons and gaps removed, and fields standardized according to the selected BNG layer type.
+    Produces a fixed polygon layer with repaired geometries, small polygons, slivers and gaps and duplicate features removed, and fields standardized according to the selected BNG layer type.<br>\
     """
 
         return text

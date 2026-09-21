@@ -30,7 +30,10 @@ __copyright__ = "(C) 2026 by Teodora Koleva"
 
 __revision__ = "$Format:%H$"
 
+import os
+
 from qgis.core import QgsProcessingProvider
+from qgis.PyQt.QtGui import QIcon
 from .algorithms.DesignatedSite_DistanceAndBearing import (
     DesignatedSite_DistanceAndBearingAlgorithm,
 )
@@ -54,10 +57,15 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         pass
 
     def loadAlgorithms(self):
-        self.addAlgorithm(DesignatedSite_DistanceAndBearingAlgorithm())
-        self.addAlgorithm(BNG_FixLayerAlgorithm())
-        self.addAlgorithm(DistanceAndBearingAlgorithm())
-        self.addAlgorithm(Fix_layer_general())
+        algorithms = [
+            DistanceAndBearingAlgorithm(),
+            DesignatedSite_DistanceAndBearingAlgorithm(),
+            Fix_layer_general(),
+            BNG_FixLayerAlgorithm(),
+        ]
+
+        for algorithm in algorithms:
+            self.addAlgorithm(algorithm)
         # add additional algorithms here
         # self.addAlgorithm(MyOtherAlgorithm())
 
@@ -67,14 +75,14 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
     def name(self):
         return self.tr("Spatialsesh")
 
-    def icon(self):
-        return QgsProcessingProvider.icon(self)
+    def icon(self) -> QIcon:
+        return QIcon(
+            os.path.join(
+                os.path.dirname(__file__),
+                "icons",
+                "favicon.png",
+            )
+        )
 
     def longName(self):
-        """
-        Returns the a longer version of the provider name, which can include
-        extra details such as version numbers. E.g. "Lastools LIDAR tools
-        (version 2.2.1)". This string should be localised. The default
-        implementation returns the same string as name().
-        """
         return self.name()

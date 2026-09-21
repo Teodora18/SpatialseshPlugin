@@ -103,18 +103,18 @@ class DistanceAndBearingAlgorithm(QgsProcessingAlgorithm):
                 os.path.dirname(__file__),
                 "..",
                 "icons",
-                "icon.png",
+                "Distance_bearing.svg",
             )
         )
 
     def shortHelpString(self) -> str:
         text = """ <b>General:</b><br>\
-        This algorithm calculates the distance and direction from input features to their nearest Red Line Boundary, assigns a compass bearing, and orders the results by distance.<br><br>\
+        This algorithm calculates the Distance and Bearing from the Site Boundary to the Input features that are within the Maximum distance, assigns Compass letters, and orders the results by Distance.<br><br>
         <b>Parameters:</b><br>\
        The following parameters must be defined to execute the algorithm:
-        <ul><li>Input layer</li><li>Site boundary </li><li>Maximum distance (m)</li></ul><br>\
+        <ul><li>Input layer</li><li>Site boundary </li><li>Maximum Distance (m)</li></ul><br>\
         <b>Output:</b><br>\
-        The output of the algorithm is a polygon layer with the features from the input layer that meet the condition of the maximum distance constraint with additional fields in the attribute table for distance, azimuth and bearing.
+        The output of the algorithm is a polygon layer with the features from the Input layer that within the Maximum distance constraint with additional fields in the attribute table for Distance, Bearing and Compass letters.
 <br>\
         """
         return text
