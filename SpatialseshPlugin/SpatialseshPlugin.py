@@ -32,8 +32,7 @@ __revision__ = "$Format:%H$"
 
 import os
 
-from typing import Any
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from qgis.core import QgsApplication
 from qgis.core import QgsSettings
 from qgis.PyQt.QtWidgets import QAction
@@ -108,52 +107,76 @@ class SpatialseshPlugin(object):
 
         return action
 
-    def on_license_check_success(
-        self,
-        payload: dict[str, Any],
-    ) -> None:
-        checked_at = datetime.now(timezone.utc)
+    # def on_license_check_success(
+    #     self,
+    #     payload: dict[str, Any],
+    # ) -> None:
+    #     checked_at = datetime.now(timezone.utc)
 
-        QgsSettings().setValue(
-            "maplango/license_valid",
-            True,
-        )
+    #     QgsSettings().setValue(
+    #         "maplango/license_valid",
+    #         True,
+    #     )
 
-        QgsSettings().setValue(
-            "maplango/licenseLastCheckedAt",
-            checked_at.isoformat(),
-        )
+    #     QgsSettings().setValue(
+    #         "maplango/licenseLastCheckedAt",
+    #         checked_at.isoformat(),
+    #     )
 
-    def on_license_check_error(
-        self,
-        error: str,
-    ) -> None:
-        QgsSettings().setValue(
-            "maplango/license_valid",
-            False,
-        )
+    # def on_license_check_error(
+    #     self,
+    #     error: str,
+    # ) -> None:
+    #     QgsSettings().setValue(
+    #         "maplango/license_valid",
+    #         False,
+    #     )
 
-        print(f"License validation failed: {error}")
+    #     print(f"License validation failed: {error}")
 
     def validate_saved_license(self) -> None:
-        license_key = (
-            QgsSettings()
-            .value(
-                "maplango/license_key",
-                "",
-                type=str,
-            )
-            .strip()
-        )
+        settings = QgsSettings()
+
+        license_key = settings.value(
+            "maplango/license_key",
+            "",
+            type=str,
+        ).strip()
 
         if not license_key:
             return
 
-        self.license_api.activate_licence(
-            license_key,
-            self.on_license_check_success,
-            self.on_license_check_error,
+        license_valid = settings.value(
+            "maplango/license_valid",
+            False,
+            type=bool,
         )
+
+        last_checked = settings.value(
+            "maplango/licenseLastCheckedAt",
+            "",
+            type=str,
+        )
+
+        is_valid = False
+
+        if license_valid and last_checked:
+            try:
+                checked_at = datetime.fromisoformat(last_checked)
+                valid_until = checked_at + timedelta(days=7)
+
+                if datetime.now(timezone.utc) < valid_until:
+                    is_valid = True
+
+            except ValueError:
+                pass
+
+        if not is_valid:
+            self.iface.messageBar().pushWarning(
+                "SpatialSesh",
+                "Your SpatialSesh license is not active. "
+                "Please validate your license in Settings → Options → SpatialSesh.",
+            )
 
     def initGui(self):
         self.validate_saved_license()
