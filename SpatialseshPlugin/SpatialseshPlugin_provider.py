@@ -40,6 +40,7 @@ from .algorithms.DesignatedSite_DistanceAndBearing import (
 from .algorithms.BNG_fix_layer import BNG_FixLayerAlgorithm
 from .algorithms.DistanceAndBearing import DistanceAndBearingAlgorithm
 from .algorithms.Fix_layer_general import Fix_layer_general
+from .algorithms.Union_BNG import Union_BNGAlgorithm
 
 
 class SpatialseshPluginProvider(QgsProcessingProvider):
@@ -62,6 +63,7 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
             DesignatedSite_DistanceAndBearingAlgorithm(),
             Fix_layer_general(),
             BNG_FixLayerAlgorithm(),
+            Union_BNGAlgorithm(),
         ]
 
         for algorithm in algorithms:

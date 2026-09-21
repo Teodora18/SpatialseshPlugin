@@ -86,8 +86,8 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
         self.addParameter(interim_results_parameter)
         self.addParameter(
             QgsProcessingParameterFeatureSink(
-                "Final_fixed_output",
-                "Final fixed output",
+                "fixed_BNG_output",
+                "Fixed BNG output",
                 type=Qgis.ProcessingSourceType.VectorPolygon,
                 createByDefault=True,
                 supportsAppend=True,
@@ -456,7 +456,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
                 "FIELD_TYPE": 1,  # Integer (32 bit)
                 "FORMULA": "area($geometry)",
                 "INPUT": outputs["DeleteHoles"]["OUTPUT"],
-                "OUTPUT": parameters["Final_fixed_output"],
+                "OUTPUT": parameters["fixed_BNG_output"],
             },
             context=context,
             feedback=feedback,
@@ -465,10 +465,10 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["FieldCalculatorArea"] is not None
 
-        results["Final_fixed_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
+        results["fixed_BNG_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
         context.layerToLoadOnCompletionDetails(
-            results["Final_fixed_output"]
-        ).name = "Final_fixed_output"
+            results["fixed_BNG_output"]
+        ).name = "fixed_BNG_output"
         return results
 
     def icon(self) -> QIcon:
