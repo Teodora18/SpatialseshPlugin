@@ -22,6 +22,7 @@ from qgis import processing
 from qgis.PyQt.QtGui import QIcon
 
 from ..utils.fix_layer import fix_layer_basic, fix_layer_main_pipeline2, process_gaps
+from ..utils.bng_field_mapping import get_fields
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
@@ -103,107 +104,27 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             )
         )
 
-    def create_text_field(self, expression, name, length=0) -> dict[str, Any]:
-        return {
-            "alias": None,
-            "comment": None,
-            "expression": expression,
-            "length": length,
-            "name": name,
-            "precision": 0,
-            "sub_type": 0,
-            "type": 10,
-            "type_name": "text",
-        }
-
-    def create_int_field(self, expression, name, length=0) -> dict[str, Any]:
-        return {
-            "alias": None,
-            "comment": None,
-            "expression": expression,
-            "length": length,
-            "name": name,
-            "precision": 0,
-            "sub_type": 0,
-            "type": 4,
-            "type_name": "int8",
-        }
-
     def get_field_mapping(self) -> list[dict[str, Any]]:
-        create_fields = {
-            "PARCEL_REF": self.create_text_field("Parcel_Ref", "Parcel Ref", 99),
-            "BASELINE_BROAD_HABITAT_TYPE": self.create_text_field(
-                "Baseline_Broad_Habitat_Type", "Baseline Broad Habitat Type", 99
-            ),
-            "BASELINE_HABITAT_TYPE": self.create_text_field(
-                "Baseline_Habitat_Type",
-                "Baseline Habitat Type",
-                99,
-            ),
-            "BASELINE_CONDITION": self.create_text_field(
-                "Baseline_Condition",
-                "Baseline Condition",
-                99,
-            ),
-            "BASELINE_STRATEGIC_SIGNIFICANCE": self.create_text_field(
-                "Baseline_Strategic_Significance",
-                "Baseline Strategic Significance",
-                99,
-            ),
-            "RETENTION_CATEGORY": self.create_text_field(
-                "Retention_Category",
-                "Retention Category",
-                99,
-            ),
-            "LOCATION": self.create_text_field("Location", "Location", 99),
-            "BASELINE_DISTINCTIVENESS": self.create_text_field(
-                "Baseline_Distinctiveness",
-                "Baseline Distinctiveness",
-                999,
-            ),
-            "PROPOSED_BROAD_HABITAT_TYPE": self.create_text_field(
-                "Proposed_Broad_Habitat_Type",
-                "Proposed Broad Habitat Type",
-                99,
-            ),
-            "PROPOSED_HABITAT_TYPE": self.create_text_field(
-                "Proposed_Habitat_Type",
-                "Proposed Habitat Type",
-                99,
-            ),
-            "PROPOSED_CONDITION": self.create_text_field(
-                "Proposed_Condition",
-                "Proposed Condition",
-                99,
-            ),
-            "PROPOSED_STRATEGIC_SIGNIFICANCE": self.create_text_field(
-                "Proposed_Strategic_Significance",
-                "Proposed Strategic Significance",
-                99,
-            ),
-            "HABITAT_CREATED_IN_ADVANCE_YEARS": self.create_text_field(
-                "Habitat_created_in_advance_years",
-                "Habitat created in advance/years",
-                99,
-            ),
-            "DELAY_IN_STARTING_HABITAT_CREATION_YEARS": self.create_text_field(
-                "Delay_in_starting_habitat_creation_years",
-                "Delay in starting habitat creation/years",
-                99,
-            ),
-            "SPATIAL_RISK_CATEGORY": self.create_text_field(
-                "Spatial_risk_category",
-                "Spatial risk category",
-                99,
-            ),
-            "PROPOSED_DISTINCTIVENESS": self.create_text_field(
-                "Proposed_Distinctiveness",
-                "Proposed Distinctiveness",
-                999,
-            ),
-            "AREA": self.create_int_field("Area", "Area"),
-        }
-        return list(create_fields.values())
+        field_names = [
+            "PARCEL_REF",
+            "BASELINE_BROAD_HABITAT_TYPE",
+            "BASELINE_HABITAT_TYPE",
+            "BASELINE_DISTINCTIVENESS",
+            "BASELINE_CONDITION",
+            "BASELINE_STRATEGIC_SIGNIFICANCE",
+            "RETENTION_CATEGORY",
+            "PROPOSED_BROAD_HABITAT_TYPE",
+            "PROPOSED_HABITAT_TYPE",
+            "PROPOSED_DISTINCTIVENESS",
+            "PROPOSED_CONDITION",
+            "PROPOSED_STRATEGIC_SIGNIFICANCE",
+            "DELAY_IN_STARTING_HABITAT_CREATION_YEARS",
+            "HABITAT_CREATED_IN_ADVANCE_YEARS",
+            "SPATIAL_RISK_CATEGORY",
+            "LOCATION",
+            "AREA",
+        ]
+        return get_fields(field_names)
 
     def processAlgorithm(
         self,
