@@ -16,7 +16,11 @@ from qgis import processing
 
 from qgis.PyQt.QtGui import QIcon
 
-from ..utils.fix_layer import fix_layer_main_pipeline
+from ..utils.fix_layer import (
+    fix_validate_reproject_layer,
+    fix_layer_main_pipeline,
+    process_gaps,
+)
 from ..utils.bng_field_mapping import get_fields
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
@@ -96,7 +100,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             )
         )
 
-    def get_field_mapping(self, bng_type) -> list[dict[str, Any]]:
+    def get_field_mapping(self, bng_type: int) -> list[dict[str, Any]]:
         COMMON_ADDITIONAL_FIELDS = [
             "SITE_NAME",
             "SURVEY_DATE",
@@ -200,23 +204,85 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
-        # Fix layer with the main pipeline of algorithms
+        # Fix layer with the three utils algorithms: fix_validate_reproject_layer, fix_layer_main_pipeline, and process_gaps
 
-        fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+        initial_fixed_layer = fix_validate_reproject_layer(
             parameters["polygon_layer_to_fix"],
-            parameters["minimum_mappable_unit_m2"],
-            parameters["snapping_tolerance_m"],
             parameters["output_crs"],
-            parameters["set_file_path_for_interim_results"],
             context,
             feedback,
             starting_step=1,
+        )
+        assert initial_fixed_layer is not None
+        fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+            initial_fixed_layer,
+            parameters["minimum_mappable_unit_m2"],
+            parameters["snapping_tolerance_m"],
+            parameters["set_file_path_for_interim_results"],
+            context,
+            feedback,
+            starting_step=4,
         )
 
         if fix_layer_main_pipeline_outputs is not None:
             outputs.update(fix_layer_main_pipeline_outputs)
 
-        # QgsProject.instance().addMapLayer(outputs["EliminateSelectedPolygonsGaps"]['OUTPUT'])
+        if feedback.isCanceled():
+            return {}
+
+        outputs["Dissolve"] = processing.run(
+            "native:dissolve",
+            {
+                "FIELD": [""],
+                # outputs["FixGeometriesSnap"]["OUTPUT"]comes from the fix_layer_main_pipeline_outputs dict
+                "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
+                "SEPARATE_DISJOINT": False,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["Dissolve"] is not None
+
+        feedback.setCurrentStep(18)
+        if feedback.isCanceled():
+            return {}
+
+        # Delete holes - dissolve
+        outputs["DeleteHolesDissolve"] = processing.run(
+            "native:deleteholes",
+            {
+                "INPUT": outputs["Dissolve"]["OUTPUT"],
+                "MIN_AREA": 50,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["DeleteHolesDissolve"] is not None
+
+        feedback.setCurrentStep(19)
+        if feedback.isCanceled():
+            return {}
+
+        process_gaps_outputs = process_gaps(
+            # outputs["FixGeometriesSnap"]["OUTPUT"] comes from the fix_layer_main_pipeline_outputs dict
+            outputs["FixGeometriesSnap"]["OUTPUT"],
+            outputs["DeleteHolesDissolve"]["OUTPUT"],
+            context,
+            feedback,
+            starting_step=20,
+        )
+
+        if process_gaps_outputs is not None:
+            outputs.update(process_gaps_outputs)
+
+        if feedback.isCanceled():
+            return {}
 
         # Refactor fields - names
         refactor_fields_params: list[dict[str, Any]] = self.get_field_mapping(
@@ -227,6 +293,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             "native:refactorfields",
             {
                 "FIELDS_MAPPING": refactor_fields_params,
+                # outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"] comes from the process_gaps_outputs dict
                 "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
                 "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
             },

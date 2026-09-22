@@ -16,7 +16,11 @@ from qgis import processing
 
 from qgis.PyQt.QtGui import QIcon
 
-from ..utils.fix_layer import fix_layer_basic, fix_layer_main_pipeline2, process_gaps
+from ..utils.fix_layer import (
+    fix_validate_reproject_layer,
+    fix_layer_main_pipeline,
+    process_gaps,
+)
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
@@ -94,14 +98,19 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
-        fix_layer_main_pipeline_outputs2 = fix_layer_main_pipeline2(
-            fix_layer_basic(
-                parameters["polygon_layer_to_fix"],
-                parameters["output_crs"],
-                context,
-                feedback,
-                starting_step=1,
-            ),
+        # Fix layer with the three utils algorithms: fix_validate_reproject_layer, fix_layer_main_pipeline, and process_gaps
+        initial_fixed_layer = fix_validate_reproject_layer(
+            parameters["polygon_layer_to_fix"],
+            parameters["output_crs"],
+            context,
+            feedback,
+            starting_step=1,
+        )
+
+        if initial_fixed_layer is None:
+            return {}
+        fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+            initial_fixed_layer,
             parameters["minimum_mappable_unit_m2"],
             parameters["snapping_tolerance_m"],
             parameters["set_file_path_for_interim_results"],
@@ -109,14 +118,17 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             feedback,
             starting_step=4,
         )
+        if fix_layer_main_pipeline_outputs is not None:
+            outputs.update(fix_layer_main_pipeline_outputs)
 
-        if fix_layer_main_pipeline_outputs2 is not None:
-            outputs.update(fix_layer_main_pipeline_outputs2)
+        if feedback.isCanceled():
+            return {}
 
         outputs["Dissolve"] = processing.run(
             "native:dissolve",
             {
                 "FIELD": [""],
+                # outputs["FixGeometriesSnap"]["OUTPUT"] comes from the fix_layer_main_pipeline_outputs
                 "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
                 "SEPARATE_DISJOINT": False,
                 "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
@@ -152,6 +164,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             return {}
 
         process_gaps_outputs = process_gaps(
+            # outputs["FixGeometriesSnap"]["OUTPUT"] comes from the fix_layer_main_pipeline_outputs
             outputs["FixGeometriesSnap"]["OUTPUT"],
             outputs["DeleteHolesDissolve"]["OUTPUT"],
             context,
@@ -162,26 +175,17 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
         if process_gaps_outputs is not None:
             outputs.update(process_gaps_outputs)
 
-        # fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
-        #     parameters["polygon_layer_to_fix"],
-        #     parameters["minimum_mappable_unit_m2"],
-        #     parameters["snapping_tolerance_m"],
-        #     parameters["output_crs"],
-        #     parameters["set_file_path_for_interim_results"],
-        #     context,
-        #     feedback,
-        #     starting_step=1,
-        # )
-
-        # if fix_layer_main_pipeline_outputs is not None:
-        #     outputs.update(fix_layer_main_pipeline_outputs)
+        if feedback.isCanceled():
+            return {}
 
         # Drop field - fid
         outputs["DropFieldFid"] = processing.run(
             "native:deletecolumn",
             {
                 "COLUMN": QgsExpression("'fid;cat;gap;path'").evaluate(),
-                "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
+                "INPUT": outputs["EliminateSelectedPolygonsGaps"][
+                    "OUTPUT"
+                ],  # comes from the process_gaps_outputs
                 "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
             },
             context=context,

@@ -21,7 +21,11 @@ from qgis import processing
 
 from qgis.PyQt.QtGui import QIcon
 
-from ..utils.fix_layer import fix_layer_basic, fix_layer_main_pipeline2, process_gaps
+from ..utils.fix_layer import (
+    fix_validate_reproject_layer,
+    fix_layer_main_pipeline,
+    process_gaps,
+)
 from ..utils.bng_field_mapping import get_fields
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
@@ -136,14 +140,14 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
-        baseline_layer = fix_layer_basic(
+        baseline_layer = fix_validate_reproject_layer(
             parameters["baseline_layer"],
             parameters["output_crs"],
             context,
             feedback,
         )
 
-        proposed_layer = fix_layer_basic(
+        proposed_layer = fix_validate_reproject_layer(
             parameters["proposed_layer"],
             parameters["output_crs"],
             context,
@@ -151,14 +155,13 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
         )
 
         # Fix geometries - redline
-        alg_params = {
-            "INPUT": parameters["redline_boundary"],
-            "METHOD": 0,  # Linework
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        }
         outputs["FixGeometriesRedline"] = processing.run(
             "native:fixgeometries",
-            alg_params,
+            {
+                "INPUT": parameters["redline_boundary"],
+                "METHOD": 0,  # Linework
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
@@ -191,7 +194,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        fix_union_layer_main_pipeline_outputs = fix_layer_main_pipeline2(
+        fix_union_layer_main_pipeline_outputs = fix_layer_main_pipeline(
             outputs["UnionBaselineAndProposed"]["OUTPUT"],
             parameters["minimum_mappable_unit_m2"],
             parameters["snapping_tolerance_m"],
@@ -203,6 +206,9 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         if fix_union_layer_main_pipeline_outputs is not None:
             outputs.update(fix_union_layer_main_pipeline_outputs)
+
+        if feedback.isCanceled():
+            return {}
 
         # Clip - layer to redline
         outputs["ClipLayer"] = processing.run(
@@ -233,6 +239,9 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         if process_gaps_outputs is not None:
             outputs.update(process_gaps_outputs)
+
+        if feedback.isCanceled():
+            return {}
 
         # Refactor fields - names
         refactor_fields_mapping: list[dict[str, Any]] = self.get_field_mapping()
