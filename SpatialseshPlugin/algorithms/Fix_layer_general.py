@@ -16,7 +16,7 @@ from qgis import processing
 
 from qgis.PyQt.QtGui import QIcon
 
-from ..utils.fix_layer import fix_layer_main_pipeline
+from ..utils.fix_layer import fix_layer_basic, fix_layer_main_pipeline2, process_gaps
 from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
@@ -94,19 +94,87 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
-        fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
-            parameters["polygon_layer_to_fix"],
+        fix_layer_main_pipeline_outputs2 = fix_layer_main_pipeline2(
+            fix_layer_basic(
+                parameters["polygon_layer_to_fix"],
+                parameters["output_crs"],
+                context,
+                feedback,
+                starting_step=1,
+            ),
             parameters["minimum_mappable_unit_m2"],
             parameters["snapping_tolerance_m"],
-            parameters["output_crs"],
             parameters["set_file_path_for_interim_results"],
             context,
             feedback,
-            starting_step=1,
+            starting_step=4,
         )
 
-        if fix_layer_main_pipeline_outputs is not None:
-            outputs.update(fix_layer_main_pipeline_outputs)
+        if fix_layer_main_pipeline_outputs2 is not None:
+            outputs.update(fix_layer_main_pipeline_outputs2)
+
+        outputs["Dissolve"] = processing.run(
+            "native:dissolve",
+            {
+                "FIELD": [""],
+                "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
+                "SEPARATE_DISJOINT": False,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["Dissolve"] is not None
+
+        feedback.setCurrentStep(18)
+        if feedback.isCanceled():
+            return {}
+
+        # Delete holes - dissolve
+        outputs["DeleteHolesDissolve"] = processing.run(
+            "native:deleteholes",
+            {
+                "INPUT": outputs["Dissolve"]["OUTPUT"],
+                "MIN_AREA": 50,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["DeleteHolesDissolve"] is not None
+
+        feedback.setCurrentStep(19)
+        if feedback.isCanceled():
+            return {}
+
+        process_gaps_outputs = process_gaps(
+            outputs["FixGeometriesSnap"]["OUTPUT"],
+            outputs["DeleteHolesDissolve"]["OUTPUT"],
+            context,
+            feedback,
+            starting_step=20,
+        )
+
+        if process_gaps_outputs is not None:
+            outputs.update(process_gaps_outputs)
+
+        # fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+        #     parameters["polygon_layer_to_fix"],
+        #     parameters["minimum_mappable_unit_m2"],
+        #     parameters["snapping_tolerance_m"],
+        #     parameters["output_crs"],
+        #     parameters["set_file_path_for_interim_results"],
+        #     context,
+        #     feedback,
+        #     starting_step=1,
+        # )
+
+        # if fix_layer_main_pipeline_outputs is not None:
+        #     outputs.update(fix_layer_main_pipeline_outputs)
 
         # Drop field - fid
         outputs["DropFieldFid"] = processing.run(

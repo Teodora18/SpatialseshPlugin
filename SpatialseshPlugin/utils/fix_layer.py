@@ -6,7 +6,7 @@ import processing
 
 
 def fix_layer_basic(
-    input_layer, crs_to_reproject, context, feedback, starting_step=0
+    input_layer, output_crs, context, feedback, starting_step=0
 ) -> dict[str, Any] | None:
     outputs: dict[str, Any] = {}
 
@@ -57,7 +57,7 @@ def fix_layer_basic(
             "CONVERT_CURVED_GEOMETRIES": False,
             "INPUT": outputs["CheckValidity"]["VALID_OUTPUT"],
             "OPERATION": None,
-            "TARGET_CRS": crs_to_reproject,
+            "TARGET_CRS": output_crs,
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         },
         context=context,
@@ -76,9 +76,9 @@ def fix_layer_basic(
 
 def fix_layer_main_pipeline2(
     input_layer,
-    filter_small_polygons_size_m2,
+    minimum_mappable_unit_m2,
     snapping_tolerance_m,
-    temporary_file_path_before_cleaning,
+    set_file_path_for_interim_results,
     context,
     feedback,
     starting_step=0,
@@ -92,7 +92,7 @@ def fix_layer_main_pipeline2(
                 "FIELD": "fid",
                 "INPUT": input_layer,
                 "NEW_NAME": "old_fid",
-                "OUTPUT": f"{temporary_file_path_before_cleaning}",
+                "OUTPUT": f"{set_file_path_for_interim_results}",
             },
             context=context,
             feedback=feedback,
@@ -103,7 +103,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["RenameField"] is not None
 
-    feedback.setCurrentStep(starting_step + 1)
+    feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
         return {}
 
@@ -134,7 +134,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["Vclean"] is not None
 
-    feedback.setCurrentStep(starting_step + 2)
+    feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
         return {}
 
@@ -153,7 +153,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["FixGeometriesVclean"] is not None
 
-    feedback.setCurrentStep(starting_step + 3)
+    feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
         return {}
 
@@ -174,7 +174,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["Union"] is not None
 
-    feedback.setCurrentStep(starting_step + 4)
+    feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
         return {}
 
@@ -192,7 +192,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["DeleteDuplicateGeometries"] is not None
 
-    feedback.setCurrentStep(starting_step + 5)
+    feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
         return {}
 
@@ -211,7 +211,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["RemoveNullGeometries"] is not None
 
-    feedback.setCurrentStep(starting_step + 6)
+    feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():
         return {}
 
@@ -219,7 +219,7 @@ def fix_layer_main_pipeline2(
     outputs["SelectByExpression"] = processing.run(
         "qgis:selectbyexpression",
         {
-            "EXPRESSION": f"area($geometry) < {filter_small_polygons_size_m2}",
+            "EXPRESSION": f"area($geometry) < {minimum_mappable_unit_m2}",
             "INPUT": outputs["RemoveNullGeometries"]["OUTPUT"],
             "METHOD": 0,  # creating new selection
         },
@@ -230,7 +230,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["SelectByExpression"] is not None
 
-    feedback.setCurrentStep(starting_step + 7)
+    feedback.setCurrentStep(starting_step + 6)
     if feedback.isCanceled():
         return {}
 
@@ -249,7 +249,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["EliminateSelectedPolygons"] is not None
 
-    feedback.setCurrentStep(starting_step + 8)
+    feedback.setCurrentStep(starting_step + 7)
     if feedback.isCanceled():
         return {}
 
@@ -267,7 +267,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["MultipartToSingleparts"] is not None
 
-    feedback.setCurrentStep(starting_step + 9)
+    feedback.setCurrentStep(starting_step + 8)
     if feedback.isCanceled():
         return {}
 
@@ -286,7 +286,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["ConvertGeometryType"] is not None
 
-    feedback.setCurrentStep(starting_step + 10)
+    feedback.setCurrentStep(starting_step + 9)
     if feedback.isCanceled():
         return {}
 
@@ -306,7 +306,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["RemoveDuplicateVertices"] is not None
 
-    feedback.setCurrentStep(starting_step + 11)
+    feedback.setCurrentStep(starting_step + 10)
     if feedback.isCanceled():
         return {}
 
@@ -326,7 +326,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["ExtractByExpression"] is not None
 
-    feedback.setCurrentStep(starting_step + 12)
+    feedback.setCurrentStep(starting_step + 11)
     if feedback.isCanceled():
         return {}
 
@@ -347,7 +347,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["SnapGeometriesToLayer"] is not None
 
-    feedback.setCurrentStep(starting_step + 13)
+    feedback.setCurrentStep(starting_step + 12)
     if feedback.isCanceled():
         return {}
 
@@ -366,7 +366,7 @@ def fix_layer_main_pipeline2(
 
     assert outputs["FixGeometriesSnap"] is not None
 
-    feedback.setCurrentStep(starting_step + 14)
+    feedback.setCurrentStep(starting_step + 13)
     if feedback.isCanceled():
         return {}
 
@@ -395,7 +395,7 @@ def process_gaps(
 
     assert outputs["SymmetricalDifference"] is not None
 
-    feedback.setCurrentStep(starting_step + 1)
+    feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
         return {}
 
@@ -413,7 +413,7 @@ def process_gaps(
 
     assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None
 
-    feedback.setCurrentStep(starting_step + 2)
+    feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
         return {}
 
@@ -436,7 +436,7 @@ def process_gaps(
 
     assert outputs["FieldCalculatorGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 3)
+    feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
         return {}
 
@@ -458,7 +458,7 @@ def process_gaps(
 
     assert outputs["MergeVectorLayers"] is not None
 
-    feedback.setCurrentStep(starting_step + 4)
+    feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
         return {}
 
@@ -477,7 +477,7 @@ def process_gaps(
 
     assert outputs["SelectByExpressionGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 5)
+    feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
         return {}
 
@@ -496,7 +496,7 @@ def process_gaps(
 
     assert outputs["EliminateSelectedPolygonsGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 6)
+    feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():
         return {}
 
