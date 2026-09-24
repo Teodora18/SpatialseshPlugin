@@ -1,10 +1,10 @@
 [general]
 name=SpatialseshPlugin
 email=matt@maplango.com
-author=Teodora Koleva
+author=Teodora Koleva, Matt Davies
 qgisMinimumVersion=3.22
 description=The Spatialsesh plugin provides a set of tools to support ecological Desk Studies and BNG Analysis.
-about=This plugin is developed for automatization of complex processing tasks.
+about=This plugin is developed for automatization of complex processing tasks. The Desk Study tools calculate distance, bearing and compass letters from the Red Line Boundary to the nearest Protected areas, or any other layer. This makes it quick to conduct desk studies, and ensures outputs are consistent and accurate. The BNG tools support workflows for conducting BNG analysis with separate Baseline and Proposed layers. This makes digitising the Baseline habitats, and integrating design revisions to the Proposed layer, quick and easy. The tools combine Baseline and Proposed to create a Master layer that can be exported to the NE metric. To ensure outputs are of the highest quality, the BNG tools clean and repair the layers, fix invalid geometries, removing duplicate and small polygons, snap geometries, and eliminate gaps and slithers.
 version=1.0
 repository=https://github.com/Teodora18/SpatialseshPlugin
 tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
@@ -13,7 +13,7 @@ tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
 tags= processing, algorithms
 
 ; homepage=
-; icon=
+icon=favicon.png
 
 qgisMaximumVersion=4.99
 
