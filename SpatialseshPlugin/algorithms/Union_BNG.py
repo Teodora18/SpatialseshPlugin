@@ -1,0 +1,344 @@
+"""
+Model exported as python.
+Name : fix_bng_union_baseline_proposed
+Group :
+With QGIS : 34408
+"""
+
+import os
+from typing import Any, Optional
+
+from qgis.core import QgsProcessing
+from qgis.core import QgsProcessingContext
+from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
+from qgis.core import QgsProcessingParameterVectorLayer
+from qgis.core import QgsProcessingParameterNumber
+from qgis.core import QgsProcessingParameterCrs
+from qgis.core import QgsProcessingParameterFile
+from qgis.core import QgsProcessingParameterFeatureSink
+from qgis.core import Qgis
+from qgis import processing
+
+from qgis.PyQt.QtGui import QIcon
+
+from ..utils.fix_layer import (
+    fix_validate_reproject_layer,
+    fix_layer_main_pipeline,
+    process_gaps,
+)
+from ..utils.bng_field_mapping import get_fields
+from ..utils.license_manager import MaplangoLicensedAlgorithm
+
+
+class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
+    def __init__(self):
+        super().__init__()
+
+    def initAlgorithm(self, configuration: Optional[dict[str, Any]] = None):
+        self.addParameter(
+            QgsProcessingParameterVectorLayer(
+                "baseline_layer",
+                "Baseline layer",
+                types=[Qgis.ProcessingSourceType.VectorPolygon],
+                defaultValue=None,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterVectorLayer(
+                "proposed_layer",
+                "Proposed layer",
+                types=[Qgis.ProcessingSourceType.VectorPolygon],
+                defaultValue=None,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterVectorLayer(
+                "redline_boundary",
+                "Red Line Boundary",
+                types=[Qgis.ProcessingSourceType.VectorPolygon],
+                defaultValue=None,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                "minimum_mappable_unit_m2",
+                "Minimum Mappable Unit (m2)",
+                type=Qgis.ProcessingNumberParameterType.Double,
+                defaultValue=10,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterNumber(
+                "snapping_tolerance_m",
+                "Snapping tolerance (m)",
+                type=Qgis.ProcessingNumberParameterType.Double,
+                defaultValue=0.3,
+            )
+        )
+        self.addParameter(
+            QgsProcessingParameterCrs(
+                "output_crs", "Output CRS", defaultValue="EPSG:27700"
+            )
+        )
+        interim_results_parameter = QgsProcessingParameterFile(
+            "set_file_path_for_interim_results",
+            "Set file path for interim results",
+            behavior=Qgis.ProcessingFileParameterBehavior.File,
+            fileFilter="All files (*.*)",
+            defaultValue=os.path.abspath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "..",
+                    "interim_results.gpkg",
+                )
+            ),
+        )
+        interim_results_parameter.setFlags(
+            interim_results_parameter.flags() | Qgis.ProcessingParameterFlag.Advanced
+        )
+        self.addParameter(interim_results_parameter)
+        self.addParameter(
+            QgsProcessingParameterFeatureSink(
+                "union_BNG_output",
+                "Union BNG output",
+                type=Qgis.ProcessingSourceType.VectorPolygon,
+                createByDefault=True,
+                supportsAppend=True,
+                defaultValue=None,
+            )
+        )
+
+    def get_field_mapping(self) -> list[dict[str, Any]]:
+        field_names = [
+            "PARCEL_REF",
+            "BASELINE_BROAD_HABITAT_TYPE",
+            "BASELINE_HABITAT_TYPE",
+            "BASELINE_DISTINCTIVENESS",
+            "BASELINE_CONDITION",
+            "BASELINE_STRATEGIC_SIGNIFICANCE",
+            "RETENTION_CATEGORY",
+            "PROPOSED_BROAD_HABITAT_TYPE",
+            "PROPOSED_HABITAT_TYPE",
+            "PROPOSED_DISTINCTIVENESS",
+            "PROPOSED_CONDITION",
+            "PROPOSED_STRATEGIC_SIGNIFICANCE",
+            "DELAY_IN_STARTING_HABITAT_CREATION_YEARS",
+            "HABITAT_CREATED_IN_ADVANCE_YEARS",
+            "SPATIAL_RISK_CATEGORY",
+            "LOCATION",
+            "AREA",
+        ]
+        return get_fields(field_names)
+
+    def processAlgorithm(
+        self,
+        parameters: dict[str, Any],
+        context: QgsProcessingContext,
+        feedback: QgsProcessingFeedback | None,
+    ) -> dict[str, str]:
+        feedback = QgsProcessingMultiStepFeedback(29, feedback)
+        results: dict[str, str] = {}
+        outputs: dict[str, Any] = {}
+
+        baseline_layer = fix_validate_reproject_layer(
+            parameters["baseline_layer"],
+            parameters["output_crs"],
+            context,
+            feedback,
+        )
+
+        proposed_layer = fix_validate_reproject_layer(
+            parameters["proposed_layer"],
+            parameters["output_crs"],
+            context,
+            feedback,
+        )
+
+        # Fix geometries - redline
+        outputs["FixGeometriesRedline"] = processing.run(
+            "native:fixgeometries",
+            {
+                "INPUT": parameters["redline_boundary"],
+                "METHOD": 0,  # Linework
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["FixGeometriesRedline"] is not None
+
+        feedback.setCurrentStep(4)
+        if feedback.isCanceled():
+            return {}
+
+        # Union - baseline and proposed
+        outputs["UnionBaselineAndProposed"] = processing.run(
+            "native:union",
+            {
+                "GRID_SIZE": None,
+                "INPUT": baseline_layer,
+                "OVERLAY": proposed_layer,
+                "OVERLAY_FIELDS_PREFIX": None,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            # is_child_algorithm=True,
+        )
+
+        assert outputs["UnionBaselineAndProposed"] is not None
+
+        feedback.setCurrentStep(5)
+        if feedback.isCanceled():
+            return {}
+
+        fix_union_layer_main_pipeline_outputs = fix_layer_main_pipeline(
+            outputs["UnionBaselineAndProposed"]["OUTPUT"],
+            parameters["minimum_mappable_unit_m2"],
+            parameters["snapping_tolerance_m"],
+            parameters["set_file_path_for_interim_results"],
+            context,
+            feedback,
+            starting_step=6,
+        )
+
+        if fix_union_layer_main_pipeline_outputs is not None:
+            outputs.update(fix_union_layer_main_pipeline_outputs)
+
+        if feedback.isCanceled():
+            return {}
+
+        # Clip - layer to redline
+        outputs["ClipLayer"] = processing.run(
+            "native:clip",
+            {
+                "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
+                "OVERLAY": outputs["FixGeometriesRedline"]["OUTPUT"],
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        feedback.setCurrentStep(20)
+        if feedback.isCanceled():
+            return {}
+
+        assert outputs["ClipLayer"] is not None
+
+        process_gaps_outputs = process_gaps(
+            outputs["ClipLayer"]["OUTPUT"],
+            outputs["FixGeometriesRedline"]["OUTPUT"],
+            context,
+            feedback,
+            starting_step=21,
+        )
+
+        if process_gaps_outputs is not None:
+            outputs.update(process_gaps_outputs)
+
+        if feedback.isCanceled():
+            return {}
+
+        # Refactor fields - names
+        refactor_fields_mapping: list[dict[str, Any]] = self.get_field_mapping()
+
+        outputs["RefactorFieldsNames"] = processing.run(
+            "native:refactorfields",
+            {
+                "FIELDS_MAPPING": refactor_fields_mapping,
+                "INPUT": outputs["EliminateSelectedPolygonsGaps"]["OUTPUT"],
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["RefactorFieldsNames"] is not None
+
+        feedback.setCurrentStep(27)
+        if feedback.isCanceled():
+            return {}
+
+        # Delete holes
+        outputs["DeleteHoles"] = processing.run(
+            "native:deleteholes",
+            {
+                "INPUT": outputs["RefactorFieldsNames"]["OUTPUT"],
+                "MIN_AREA": 0.1,
+                "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["DeleteHoles"] is not None
+
+        feedback.setCurrentStep(28)
+        if feedback.isCanceled():
+            return {}
+
+        # Field calculator - area
+        outputs["FieldCalculatorArea"] = processing.run(
+            "native:fieldcalculator",
+            {
+                "FIELD_LENGTH": 0,
+                "FIELD_NAME": "Area",
+                "FIELD_PRECISION": 0,
+                "FIELD_TYPE": 1,  # Integer (32 bit)
+                "FORMULA": "area($geometry)",
+                "INPUT": outputs["DeleteHoles"]["OUTPUT"],
+                "OUTPUT": parameters["union_BNG_output"],
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
+
+        assert outputs["FieldCalculatorArea"] is not None
+
+        results["union_BNG_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
+        context.layerToLoadOnCompletionDetails(
+            results["union_BNG_output"]
+        ).name = "union_BNG_output"
+        return results
+
+    def icon(self) -> QIcon:
+        return QIcon(
+            os.path.join(
+                os.path.dirname(__file__),
+                "..",
+                "icons",
+                "Union_BNG.png",
+            )
+        )
+
+    def shortHelpString(self) -> str:
+        text = """<b>General:</b><br>\
+Combines the Baseline and Proposed Spatialsesh BNG polygon layers into a single layer, preserving and combining their relevant attribute fields, and then cleans and repairs the resulting layer. The cleaning process includes fixing invalid geometries, removing duplicate and small polygons, snapping geometries, and eliminating gaps.<br>\
+<br> <b>Parameters:</b><br>\
+<ul> <li>Baseline layer</li><li>Proposed layer</li> <li><b>Minimum Mappable Unit (m2)</li> <li><b>Snapping tolerance (m)</li> <li><b>Output CRS</li><li> Set file path for interim results - <b>Advanced parameter with a default value</b></li> </ul><br>\
+<b>Output:</b><br>\
+Produces a single fixed polygon layer Master BNG layer, which can be exported to the NE metric. Baseline and Proposed features are combined, with their relevant attributes preserved and standardised. Invalid geometries, small polygons and slivers, duplicate geometries, and gaps are addressed during the cleaning process."""
+
+        return text
+
+    def name(self) -> str:
+        return "Union_BNG"
+
+    def displayName(self) -> str:
+        return "Union BNG"
+
+    def group(self) -> str:
+        return ""
+
+    def groupId(self) -> str:
+        return ""
+
+    def createInstance(self):
+        return self.__class__()

@@ -1,20 +1,20 @@
 from typing import Any
 from qgis.core import (
     QgsProcessing,
+    QgsProcessingContext,
+    QgsProcessingMultiStepFeedback,
+    QgsVectorLayer,
 )
 import processing
 
 
-def fix_layer_main_pipeline(
-    input_layer,
-    filter_small_polygons_size_m2,
-    snapping_tolerance_m,
-    crs_to_reproject,
-    temporary_file_path_before_cleaning,
-    context,
-    feedback,
-    starting_step=0,
-) -> dict[str, Any] | None:
+def fix_validate_reproject_layer(
+    input_layer: str,
+    output_crs: str,
+    context: QgsProcessingContext,
+    feedback: QgsProcessingMultiStepFeedback,
+    starting_step: int = 1,
+) -> QgsVectorLayer | None:
     outputs: dict[str, Any] = {}
 
     # Fix geometries
@@ -35,7 +35,7 @@ def fix_layer_main_pipeline(
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
-        return {}
+        return None
 
     # Check validity
     outputs["CheckValidity"] = processing.run(
@@ -55,7 +55,7 @@ def fix_layer_main_pipeline(
 
     feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
-        return {}
+        return None
 
     # Reproject layer
     outputs["ReprojectLayer"] = processing.run(
@@ -64,7 +64,7 @@ def fix_layer_main_pipeline(
             "CONVERT_CURVED_GEOMETRIES": False,
             "INPUT": outputs["CheckValidity"]["VALID_OUTPUT"],
             "OPERATION": None,
-            "TARGET_CRS": crs_to_reproject,
+            "TARGET_CRS": output_crs,
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         },
         context=context,
@@ -76,28 +76,50 @@ def fix_layer_main_pipeline(
 
     feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
-        return {}
+        return None
 
-    # Rename field
-    if outputs["ReprojectLayer"]["OUTPUT"].fields().indexOf("fid") != -1:
-        outputs["RenameField"] = processing.run(
+    return outputs["ReprojectLayer"]["OUTPUT"]
+
+
+def fix_layer_main_pipeline(
+    input_layer: QgsVectorLayer,
+    minimum_mappable_unit_m2: float,
+    snapping_tolerance_m: float,
+    set_file_path_for_interim_results: str,
+    context: QgsProcessingContext,
+    feedback: QgsProcessingMultiStepFeedback,
+    starting_step=1,
+) -> dict[str, Any] | None:
+    outputs: dict[str, Any] = {}
+
+    if input_layer.fields().indexOf("fid") != -1:
+        outputs["PrepareInterimLayer"] = processing.run(
             "native:renametablefield",
             {
                 "FIELD": "fid",
-                "INPUT": outputs["ReprojectLayer"]["OUTPUT"],
+                "INPUT": input_layer,
                 "NEW_NAME": "old_fid",
-                "OUTPUT": f"{temporary_file_path_before_cleaning}",
+                "OUTPUT": f"{set_file_path_for_interim_results}",
             },
             context=context,
             feedback=feedback,
             is_child_algorithm=True,
         )
     else:
-        outputs["RenameField"] = outputs["ReprojectLayer"]
+        outputs["PrepareInterimLayer"] = processing.run(
+            "native:savefeatures",
+            {
+                "INPUT": input_layer,
+                "OUTPUT": set_file_path_for_interim_results,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
 
-    assert outputs["RenameField"] is not None
+    assert outputs["PrepareInterimLayer"] is not None
 
-    feedback.setCurrentStep(starting_step + 3)
+    feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
         return {}
 
@@ -114,7 +136,7 @@ def fix_layer_main_pipeline(
             "GRASS_VECTOR_DSCO": None,
             "GRASS_VECTOR_EXPORT_NOCAT": False,
             "GRASS_VECTOR_LCO": None,
-            "input": outputs["RenameField"]["OUTPUT"],
+            "input": outputs["PrepareInterimLayer"]["OUTPUT"],
             "threshold": None,
             "tool": [0, 6, 11, 12],  # break,rmdupl,rmline,rmsa
             "type": [4],  # area
@@ -128,7 +150,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["Vclean"] is not None
 
-    feedback.setCurrentStep(starting_step + 4)
+    feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
         return {}
 
@@ -147,7 +169,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["FixGeometriesVclean"] is not None
 
-    feedback.setCurrentStep(starting_step + 5)
+    feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
         return {}
 
@@ -168,7 +190,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["Union"] is not None
 
-    feedback.setCurrentStep(starting_step + 6)
+    feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
         return {}
 
@@ -186,7 +208,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["DeleteDuplicateGeometries"] is not None
 
-    feedback.setCurrentStep(starting_step + 7)
+    feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
         return {}
 
@@ -205,7 +227,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["RemoveNullGeometries"] is not None
 
-    feedback.setCurrentStep(starting_step + 8)
+    feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():
         return {}
 
@@ -213,7 +235,7 @@ def fix_layer_main_pipeline(
     outputs["SelectByExpression"] = processing.run(
         "qgis:selectbyexpression",
         {
-            "EXPRESSION": f"area($geometry) < {filter_small_polygons_size_m2}",
+            "EXPRESSION": f"area($geometry) < {minimum_mappable_unit_m2}",
             "INPUT": outputs["RemoveNullGeometries"]["OUTPUT"],
             "METHOD": 0,  # creating new selection
         },
@@ -224,7 +246,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["SelectByExpression"] is not None
 
-    feedback.setCurrentStep(starting_step + 9)
+    feedback.setCurrentStep(starting_step + 6)
     if feedback.isCanceled():
         return {}
 
@@ -243,7 +265,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["EliminateSelectedPolygons"] is not None
 
-    feedback.setCurrentStep(starting_step + 10)
+    feedback.setCurrentStep(starting_step + 7)
     if feedback.isCanceled():
         return {}
 
@@ -261,7 +283,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["MultipartToSingleparts"] is not None
 
-    feedback.setCurrentStep(starting_step + 11)
+    feedback.setCurrentStep(starting_step + 8)
     if feedback.isCanceled():
         return {}
 
@@ -280,7 +302,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["ConvertGeometryType"] is not None
 
-    feedback.setCurrentStep(starting_step + 12)
+    feedback.setCurrentStep(starting_step + 9)
     if feedback.isCanceled():
         return {}
 
@@ -300,7 +322,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["RemoveDuplicateVertices"] is not None
 
-    feedback.setCurrentStep(starting_step + 13)
+    feedback.setCurrentStep(starting_step + 10)
     if feedback.isCanceled():
         return {}
 
@@ -320,7 +342,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["ExtractByExpression"] is not None
 
-    feedback.setCurrentStep(starting_step + 14)
+    feedback.setCurrentStep(starting_step + 11)
     if feedback.isCanceled():
         return {}
 
@@ -341,7 +363,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["SnapGeometriesToLayer"] is not None
 
-    feedback.setCurrentStep(starting_step + 15)
+    feedback.setCurrentStep(starting_step + 12)
     if feedback.isCanceled():
         return {}
 
@@ -360,56 +382,29 @@ def fix_layer_main_pipeline(
 
     assert outputs["FixGeometriesSnap"] is not None
 
-    feedback.setCurrentStep(starting_step + 16)
+    feedback.setCurrentStep(starting_step + 13)
     if feedback.isCanceled():
         return {}
 
-    # Dissolve
-    outputs["Dissolve"] = processing.run(
-        "native:dissolve",
-        {
-            "FIELD": [""],
-            "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
-            "SEPARATE_DISJOINT": False,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        },
-        context=context,
-        feedback=feedback,
-        is_child_algorithm=True,
-    )
+    return outputs
 
-    assert outputs["Dissolve"] is not None
 
-    feedback.setCurrentStep(starting_step + 17)
-    if feedback.isCanceled():
-        return {}
-
-    # Delete holes - dissolve
-    outputs["DeleteHolesDissolve"] = processing.run(
-        "native:deleteholes",
-        {
-            "INPUT": outputs["Dissolve"]["OUTPUT"],
-            "MIN_AREA": 50,
-            "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
-        },
-        context=context,
-        feedback=feedback,
-        is_child_algorithm=True,
-    )
-
-    assert outputs["DeleteHolesDissolve"] is not None
-
-    feedback.setCurrentStep(starting_step + 18)
-    if feedback.isCanceled():
-        return {}
+def process_gaps(
+    input_layer: str,
+    overlay_layer: str,
+    context: QgsProcessingContext,
+    feedback: QgsProcessingMultiStepFeedback,
+    starting_step=1,
+) -> dict[str, Any] | None:
+    outputs: dict[str, Any] = {}
 
     # Symmetrical difference
     outputs["SymmetricalDifference"] = processing.run(
         "native:symmetricaldifference",
         {
             "GRID_SIZE": None,
-            "INPUT": outputs["FixGeometriesSnap"]["OUTPUT"],
-            "OVERLAY": outputs["DeleteHolesDissolve"]["OUTPUT"],
+            "INPUT": input_layer,
+            "OVERLAY": overlay_layer,
             "OVERLAY_FIELDS_PREFIX": None,
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         },
@@ -420,7 +415,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["SymmetricalDifference"] is not None
 
-    feedback.setCurrentStep(starting_step + 19)
+    feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
         return {}
 
@@ -438,7 +433,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None
 
-    feedback.setCurrentStep(starting_step + 20)
+    feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
         return {}
 
@@ -461,7 +456,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["FieldCalculatorGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 21)
+    feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
         return {}
 
@@ -472,7 +467,7 @@ def fix_layer_main_pipeline(
             "CRS": None,
             "LAYERS": [
                 outputs["FieldCalculatorGaps"]["OUTPUT"],
-                outputs["FixGeometriesSnap"]["OUTPUT"],
+                input_layer,  # the so-far-cleaned layer
             ],
             "OUTPUT": QgsProcessing.TEMPORARY_OUTPUT,
         },
@@ -483,7 +478,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["MergeVectorLayers"] is not None
 
-    feedback.setCurrentStep(starting_step + 22)
+    feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
         return {}
 
@@ -502,7 +497,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["SelectByExpressionGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 23)
+    feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
         return {}
 
@@ -521,7 +516,7 @@ def fix_layer_main_pipeline(
 
     assert outputs["EliminateSelectedPolygonsGaps"] is not None
 
-    feedback.setCurrentStep(starting_step + 24)
+    feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():
         return {}
 

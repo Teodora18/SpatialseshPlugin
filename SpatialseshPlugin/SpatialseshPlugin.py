@@ -222,6 +222,14 @@ class SpatialseshPlugin(object):
             parent=self.iface.mainWindow(),
         )
 
+        # Union BNG button
+        self.add_action(
+            os.path.join(os.path.dirname(__file__), "icons", "Union_BNG.png"),
+            "Union BNG",
+            self.run_union_BNG,
+            parent=self.iface.mainWindow(),
+        )
+
     def run_distance_analysis(self):
         processing.execAlgorithmDialog("Spatialsesh:DistanceAndBearing")
 
@@ -233,6 +241,9 @@ class SpatialseshPlugin(object):
 
     def run_BNG_fix(self):
         processing.execAlgorithmDialog("Spatialsesh:FixLayer_BNG")
+
+    def run_union_BNG(self):
+        processing.execAlgorithmDialog("Spatialsesh:Union_BNG")
 
     def unload(self):
         if self.provider:
