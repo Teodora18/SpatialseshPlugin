@@ -94,7 +94,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, str]:
-        feedback = QgsProcessingMultiStepFeedback(27, feedback)
+        feedback = QgsProcessingMultiStepFeedback(28, feedback)
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 

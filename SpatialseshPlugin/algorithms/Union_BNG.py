@@ -136,7 +136,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
         context: QgsProcessingContext,
         feedback: QgsProcessingFeedback | None,
     ) -> dict[str, str]:
-        feedback = QgsProcessingMultiStepFeedback(27, feedback)
+        feedback = QgsProcessingMultiStepFeedback(29, feedback)
         results: dict[str, str] = {}
         outputs: dict[str, Any] = {}
 
@@ -169,7 +169,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["FixGeometriesRedline"] is not None
 
-        feedback.setCurrentStep(5)
+        feedback.setCurrentStep(4)
         if feedback.isCanceled():
             return {}
 
@@ -190,7 +190,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["UnionBaselineAndProposed"] is not None
 
-        feedback.setCurrentStep(8)
+        feedback.setCurrentStep(5)
         if feedback.isCanceled():
             return {}
 
@@ -201,7 +201,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             parameters["set_file_path_for_interim_results"],
             context,
             feedback,
-            starting_step=1,
+            starting_step=6,
         )
 
         if fix_union_layer_main_pipeline_outputs is not None:
@@ -223,7 +223,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        feedback.setCurrentStep(24)
+        feedback.setCurrentStep(20)
         if feedback.isCanceled():
             return {}
 
@@ -234,7 +234,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             outputs["FixGeometriesRedline"]["OUTPUT"],
             context,
             feedback,
-            starting_step=25,
+            starting_step=21,
         )
 
         if process_gaps_outputs is not None:
@@ -260,7 +260,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["RefactorFieldsNames"] is not None
 
-        feedback.setCurrentStep(26)
+        feedback.setCurrentStep(27)
         if feedback.isCanceled():
             return {}
 
@@ -279,7 +279,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
 
         assert outputs["DeleteHoles"] is not None
 
-        feedback.setCurrentStep(27)
+        feedback.setCurrentStep(28)
         if feedback.isCanceled():
             return {}
 

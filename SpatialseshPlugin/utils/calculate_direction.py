@@ -11,7 +11,7 @@ def calculate_distance_and_direction(
     max_distance,
     context,
     feedback,
-    starting_step=0,
+    starting_step=1,
 ) -> dict[str, Any] | None:
     outputs: dict[str, Any] = {}
 

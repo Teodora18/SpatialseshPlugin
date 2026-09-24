@@ -69,6 +69,7 @@ class DistanceAndBearingAlgorithm(QgsProcessingAlgorithm):
             parameters["maximim_distance_m"],
             context,
             feedback,
+            starting_step=1,
         )
 
         if direction_outputs is not None:

@@ -13,7 +13,7 @@ def fix_validate_reproject_layer(
     output_crs: str,
     context: QgsProcessingContext,
     feedback: QgsProcessingMultiStepFeedback,
-    starting_step: int = 0,
+    starting_step: int = 1,
 ) -> QgsVectorLayer | None:
     outputs: dict[str, Any] = {}
 
@@ -88,7 +88,7 @@ def fix_layer_main_pipeline(
     set_file_path_for_interim_results: str,
     context: QgsProcessingContext,
     feedback: QgsProcessingMultiStepFeedback,
-    starting_step=0,
+    starting_step=1,
 ) -> dict[str, Any] | None:
     outputs: dict[str, Any] = {}
 
@@ -394,7 +394,7 @@ def process_gaps(
     overlay_layer: str,
     context: QgsProcessingContext,
     feedback: QgsProcessingMultiStepFeedback,
-    starting_step=0,
+    starting_step=1,
 ) -> dict[str, Any] | None:
     outputs: dict[str, Any] = {}
 
