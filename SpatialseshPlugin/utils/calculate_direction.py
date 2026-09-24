@@ -1,17 +1,19 @@
 from typing import Any
 from qgis.core import (
     QgsProcessing,
+    QgsProcessingContext,
+    QgsProcessingMultiStepFeedback,
 )
 import processing
 
 
 def calculate_distance_and_direction(
-    input_layer,
-    boundary_layer,
-    max_distance,
-    context,
-    feedback,
-    starting_step=1,
+    input_layer: str,
+    boundary_layer: str,
+    max_distance: float,
+    context: QgsProcessingContext,
+    feedback: QgsProcessingMultiStepFeedback,
+    starting_step: int = 1,
 ) -> dict[str, Any] | None:
     outputs: dict[str, Any] = {}
 
