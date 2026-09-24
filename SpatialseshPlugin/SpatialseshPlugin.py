@@ -52,7 +52,7 @@ class LicenseOptionsFactory(QgsOptionsWidgetFactory):
         super(QgsOptionsWidgetFactory, self).__init__()
 
     def icon(self):
-        return QIcon(os.path.join(os.path.dirname(__file__), "icons", "favicon.png"))
+        return QIcon(os.path.join(os.path.dirname(__file__), "favicon.png"))
 
     def createWidget(self, parent):
         return LicenseOptionsWidget(parent)

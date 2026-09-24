@@ -81,7 +81,6 @@ class SpatialseshPluginProvider(QgsProcessingProvider):
         return QIcon(
             os.path.join(
                 os.path.dirname(__file__),
-                "icons",
                 "favicon.png",
             )
         )
