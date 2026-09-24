@@ -12,7 +12,7 @@ tracker=https://github.com/Teodora18/SpatialseshPlugin/issues
 ; changelog=
 tags= processing, algorithms
 
-; homepage=
+homepage=https://www.spatialsesh.com/
 icon=favicon.png
 
 qgisMaximumVersion=4.99
