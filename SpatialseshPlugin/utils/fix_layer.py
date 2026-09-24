@@ -93,7 +93,7 @@ def fix_layer_main_pipeline(
     outputs: dict[str, Any] = {}
 
     if input_layer.fields().indexOf("fid") != -1:
-        outputs["RenameField"] = processing.run(
+        outputs["PrepareInterimLayer"] = processing.run(
             "native:renametablefield",
             {
                 "FIELD": "fid",
@@ -106,9 +106,18 @@ def fix_layer_main_pipeline(
             is_child_algorithm=True,
         )
     else:
-        outputs["RenameField"] = outputs["ReprojectLayer"]
+        outputs["PrepareInterimLayer"] = processing.run(
+            "native:savefeatures",
+            {
+                "INPUT": input_layer,
+                "OUTPUT": set_file_path_for_interim_results,
+            },
+            context=context,
+            feedback=feedback,
+            is_child_algorithm=True,
+        )
 
-    assert outputs["RenameField"] is not None
+    assert outputs["PrepareInterimLayer"] is not None
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
@@ -127,7 +136,7 @@ def fix_layer_main_pipeline(
             "GRASS_VECTOR_DSCO": None,
             "GRASS_VECTOR_EXPORT_NOCAT": False,
             "GRASS_VECTOR_LCO": None,
-            "input": outputs["RenameField"]["OUTPUT"],
+            "input": outputs["PrepareInterimLayer"]["OUTPUT"],
             "threshold": None,
             "tool": [0, 6, 11, 12],  # break,rmdupl,rmline,rmsa
             "type": [4],  # area
