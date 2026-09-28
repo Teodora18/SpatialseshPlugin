@@ -90,7 +90,7 @@ class DistanceAndBearingAlgorithm(QgsProcessingAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["OrderByExpression"] is not None
+        assert outputs["OrderByExpression"] is not None  # nosec B101
 
         feedback.setProgressText("Features ordered by distance.")
 

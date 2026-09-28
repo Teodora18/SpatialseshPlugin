@@ -167,7 +167,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["FixGeometriesRedline"] is not None
+        assert outputs["FixGeometriesRedline"] is not None  # nosec B101
 
         feedback.setCurrentStep(4)
         if feedback.isCanceled():
@@ -188,7 +188,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             # is_child_algorithm=True,
         )
 
-        assert outputs["UnionBaselineAndProposed"] is not None
+        assert outputs["UnionBaselineAndProposed"] is not None  # nosec B101
 
         feedback.setCurrentStep(5)
         if feedback.isCanceled():
@@ -227,7 +227,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
         if feedback.isCanceled():
             return {}
 
-        assert outputs["ClipLayer"] is not None
+        assert outputs["ClipLayer"] is not None  # nosec B101
 
         process_gaps_outputs = process_gaps(
             outputs["ClipLayer"]["OUTPUT"],
@@ -258,7 +258,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["RefactorFieldsNames"] is not None
+        assert outputs["RefactorFieldsNames"] is not None  # nosec B101
 
         feedback.setCurrentStep(27)
         if feedback.isCanceled():
@@ -277,7 +277,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DeleteHoles"] is not None
+        assert outputs["DeleteHoles"] is not None  # nosec B101
 
         feedback.setCurrentStep(28)
         if feedback.isCanceled():
@@ -300,7 +300,7 @@ class Union_BNGAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["FieldCalculatorArea"] is not None
+        assert outputs["FieldCalculatorArea"] is not None  # nosec B101
 
         results["union_BNG_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
         context.layerToLoadOnCompletionDetails(

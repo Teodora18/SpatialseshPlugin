@@ -31,7 +31,7 @@ def fix_validate_reproject_layer(
         is_child_algorithm=True,
     )
 
-    assert outputs["FixGeometries"] is not None
+    assert outputs["FixGeometries"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
@@ -51,7 +51,7 @@ def fix_validate_reproject_layer(
         is_child_algorithm=True,
     )
 
-    assert outputs["CheckValidity"] is not None
+    assert outputs["CheckValidity"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
@@ -72,7 +72,7 @@ def fix_validate_reproject_layer(
         # is_child_algorithm=True,
     )
 
-    assert outputs["ReprojectLayer"] is not None
+    assert outputs["ReprojectLayer"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
@@ -117,7 +117,7 @@ def fix_layer_main_pipeline(
             is_child_algorithm=True,
         )
 
-    assert outputs["PrepareInterimLayer"] is not None
+    assert outputs["PrepareInterimLayer"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
@@ -148,7 +148,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["Vclean"] is not None
+    assert outputs["Vclean"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
@@ -167,7 +167,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["FixGeometriesVclean"] is not None
+    assert outputs["FixGeometriesVclean"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
@@ -188,7 +188,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["Union"] is not None
+    assert outputs["Union"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
@@ -206,7 +206,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["DeleteDuplicateGeometries"] is not None
+    assert outputs["DeleteDuplicateGeometries"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
@@ -225,7 +225,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["RemoveNullGeometries"] is not None
+    assert outputs["RemoveNullGeometries"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():
@@ -244,7 +244,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["SelectByExpression"] is not None
+    assert outputs["SelectByExpression"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 6)
     if feedback.isCanceled():
@@ -263,7 +263,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["EliminateSelectedPolygons"] is not None
+    assert outputs["EliminateSelectedPolygons"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 7)
     if feedback.isCanceled():
@@ -281,7 +281,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["MultipartToSingleparts"] is not None
+    assert outputs["MultipartToSingleparts"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 8)
     if feedback.isCanceled():
@@ -300,7 +300,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["ConvertGeometryType"] is not None
+    assert outputs["ConvertGeometryType"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 9)
     if feedback.isCanceled():
@@ -320,7 +320,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["RemoveDuplicateVertices"] is not None
+    assert outputs["RemoveDuplicateVertices"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 10)
     if feedback.isCanceled():
@@ -340,7 +340,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["ExtractByExpression"] is not None
+    assert outputs["ExtractByExpression"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 11)
     if feedback.isCanceled():
@@ -361,7 +361,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["SnapGeometriesToLayer"] is not None
+    assert outputs["SnapGeometriesToLayer"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 12)
     if feedback.isCanceled():
@@ -380,7 +380,7 @@ def fix_layer_main_pipeline(
         is_child_algorithm=True,
     )
 
-    assert outputs["FixGeometriesSnap"] is not None
+    assert outputs["FixGeometriesSnap"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 13)
     if feedback.isCanceled():
@@ -413,7 +413,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["SymmetricalDifference"] is not None
+    assert outputs["SymmetricalDifference"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
@@ -431,7 +431,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None
+    assert outputs["MultipartToSinglepartsSymmetricalDifference"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
@@ -454,7 +454,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["FieldCalculatorGaps"] is not None
+    assert outputs["FieldCalculatorGaps"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():
@@ -476,7 +476,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["MergeVectorLayers"] is not None
+    assert outputs["MergeVectorLayers"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 3)
     if feedback.isCanceled():
@@ -495,7 +495,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["SelectByExpressionGaps"] is not None
+    assert outputs["SelectByExpressionGaps"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 4)
     if feedback.isCanceled():
@@ -514,7 +514,7 @@ def process_gaps(
         is_child_algorithm=True,
     )
 
-    assert outputs["EliminateSelectedPolygonsGaps"] is not None
+    assert outputs["EliminateSelectedPolygonsGaps"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 5)
     if feedback.isCanceled():

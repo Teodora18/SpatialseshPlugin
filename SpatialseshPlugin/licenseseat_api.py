@@ -7,7 +7,7 @@ from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtNetwork import QNetworkRequest, QNetworkReply
 
 API_SLUG = "spatialseshplugin-987471"
-API_KEY = "pk_live_5zpUS5HYpjTtikijqYSg7yMWi5WuaddiH"
+API_KEY = "pk_live_5zpUS5HYpjTtikijqYSg7yMWi5WuaddiH"  # pragma: allowlist secret
 
 
 def noop(*args, **kwargs):

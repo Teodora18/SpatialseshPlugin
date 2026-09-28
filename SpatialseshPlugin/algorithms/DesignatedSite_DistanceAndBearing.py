@@ -109,7 +109,7 @@ class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["RetainFields"] is not None
+        assert outputs["RetainFields"] is not None  # nosec B101
 
         feedback.setCurrentStep(4)
         if feedback.isCanceled():
@@ -131,7 +131,7 @@ class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["OrderByExpression"] is not None
+        assert outputs["OrderByExpression"] is not None  # nosec B101
 
         feedback.setCurrentStep(5)
         if feedback.isCanceled():
@@ -162,7 +162,7 @@ class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
                 is_child_algorithm=True,
             )
 
-            assert outputs[f"ExtractByExpression{output_name}"] is not None
+            assert outputs[f"ExtractByExpression{output_name}"] is not None  # nosec B101
 
             if feedback.isCanceled():
                 return {}
@@ -182,7 +182,7 @@ class DesignatedSite_DistanceAndBearingAlgorithm(MaplangoLicensedAlgorithm):
                 is_child_algorithm=True,
             )
 
-            assert outputs[f"DropFields{output_name}"] is not None
+            assert outputs[f"DropFields{output_name}"] is not None  # nosec B101
 
             results[output_name] = outputs[f"DropFields{output_name}"]["OUTPUT"]
 
