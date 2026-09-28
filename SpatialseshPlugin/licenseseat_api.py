@@ -72,7 +72,7 @@ class LicenseSeatApi:
         payload_bytes = json.dumps(payload).encode("utf-8")
         reply = self._nam.post(request, payload_bytes)
 
-        assert reply is not None
+        assert reply is not None  # nosec B101
 
         if on_finished:
             reply.finished.connect(lambda: on_finished(reply))
