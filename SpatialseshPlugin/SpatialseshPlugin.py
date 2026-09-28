@@ -173,21 +173,21 @@ class SpatialseshPlugin(object):
 
         if not is_valid:
             self.iface.messageBar().pushWarning(
-                "SpatialSesh",
-                "Your SpatialSesh license is not active. "
-                "Please validate your license in Settings → Options → SpatialSesh.",
+                "Spatialsesh",
+                "Your Spatialsesh license is not active. "
+                "Please validate your license in Settings → Options → Spatialsesh.",
             )
 
     def initGui(self):
         self.validate_saved_license()
         self.license_options_factory = LicenseOptionsFactory()
-        self.license_options_factory.setTitle("SpatialSesh")
+        self.license_options_factory.setTitle("Spatialsesh")
         self.iface.registerOptionsWidgetFactory(self.license_options_factory)
 
         self.initProcessing()
 
-        self.toolbar = self.iface.addToolBar("SpatialSesh")
-        self.toolbar.setObjectName("SpatialSeshToolbar")
+        self.toolbar = self.iface.addToolBar("Spatialsesh")
+        self.toolbar.setObjectName("SpatialseshToolbar")
 
         # Distance analysis button
         self.add_action(

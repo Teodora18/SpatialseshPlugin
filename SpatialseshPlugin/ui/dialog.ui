@@ -29,7 +29,7 @@
    <item>
     <widget class="QLabel" name="instructionsLabel">
         <property name="text">
-        <string>To use SpatialSesh plugin, enter your license key below, which you received via email. Your license will be checked online. A successful validation remains valid for 7 days.
+        <string>To use Spatialsesh plugin, enter your license key below, which you received via email. Your license will be checked online. A successful validation remains valid for 7 days.
 Suppose you have any issues, please contact matt@maplango.com.</string>
         </property>
         <property name="wordWrap">

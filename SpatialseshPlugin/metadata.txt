@@ -1,5 +1,5 @@
 [general]
-name=SpatialseshPlugin
+name=Spatialsesh
 email=matt@maplango.com
 author=Teodora Koleva, Matt Davies
 qgisMinimumVersion=3.22
