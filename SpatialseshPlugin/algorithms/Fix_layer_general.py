@@ -138,7 +138,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["Dissolve"] is not None
+        assert outputs["Dissolve"] is not None  # nosec B101
 
         feedback.setCurrentStep(18)
         if feedback.isCanceled():
@@ -157,7 +157,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DeleteHolesDissolve"] is not None
+        assert outputs["DeleteHolesDissolve"] is not None  # nosec B101
 
         feedback.setCurrentStep(19)
         if feedback.isCanceled():
@@ -193,7 +193,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DropFieldFid"] is not None
+        assert outputs["DropFieldFid"] is not None  # nosec B101
 
         feedback.setCurrentStep(26)
         if feedback.isCanceled():
@@ -212,7 +212,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DeleteHoles"] is not None
+        assert outputs["DeleteHoles"] is not None  # nosec B101
 
         feedback.setCurrentStep(27)
         if feedback.isCanceled():
@@ -235,7 +235,7 @@ class Fix_layer_general(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["FieldCalculatorArea"] is not None
+        assert outputs["FieldCalculatorArea"] is not None  # nosec B101
 
         results["fixed_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
         context.layerToLoadOnCompletionDetails(

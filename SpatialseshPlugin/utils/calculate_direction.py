@@ -35,7 +35,7 @@ def calculate_distance_and_direction(
         is_child_algorithm=True,
     )
 
-    assert outputs["JoinAttributesByNearest"] is not None
+    assert outputs["JoinAttributesByNearest"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step)
     if feedback.isCanceled():
@@ -60,7 +60,7 @@ def calculate_distance_and_direction(
         is_child_algorithm=True,
     )
 
-    assert outputs["FieldCalculatorAzimuth"] is not None
+    assert outputs["FieldCalculatorAzimuth"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 1)
     if feedback.isCanceled():
@@ -85,7 +85,7 @@ def calculate_distance_and_direction(
         is_child_algorithm=True,
     )
 
-    assert outputs["FieldCalculatorBearing"] is not None
+    assert outputs["FieldCalculatorBearing"] is not None  # nosec B101
 
     feedback.setCurrentStep(starting_step + 2)
     if feedback.isCanceled():

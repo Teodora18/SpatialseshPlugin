@@ -213,7 +213,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             feedback,
             starting_step=1,
         )
-        assert initial_fixed_layer is not None
+        assert initial_fixed_layer is not None  # nosec B101
         fix_layer_main_pipeline_outputs = fix_layer_main_pipeline(
             initial_fixed_layer,
             parameters["minimum_mappable_unit_m2"],
@@ -244,7 +244,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["Dissolve"] is not None
+        assert outputs["Dissolve"] is not None  # nosec B101
 
         feedback.setCurrentStep(18)
         if feedback.isCanceled():
@@ -263,7 +263,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DeleteHolesDissolve"] is not None
+        assert outputs["DeleteHolesDissolve"] is not None  # nosec B101
 
         feedback.setCurrentStep(19)
         if feedback.isCanceled():
@@ -302,7 +302,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"] is not None
+        assert outputs[f"RefactorFieldsNames_bng{parameters['Layer_type']}"] is not None  # nosec B101
 
         feedback.setCurrentStep(26)
         if feedback.isCanceled():
@@ -323,7 +323,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["DeleteHoles"] is not None
+        assert outputs["DeleteHoles"] is not None  # nosec B101
 
         feedback.setCurrentStep(27)
         if feedback.isCanceled():
@@ -346,7 +346,7 @@ class BNG_FixLayerAlgorithm(MaplangoLicensedAlgorithm):
             is_child_algorithm=True,
         )
 
-        assert outputs["FieldCalculatorArea"] is not None
+        assert outputs["FieldCalculatorArea"] is not None  # nosec B101
 
         results["fixed_BNG_output"] = outputs["FieldCalculatorArea"]["OUTPUT"]
         context.layerToLoadOnCompletionDetails(
