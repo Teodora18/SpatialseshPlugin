@@ -28,6 +28,11 @@ jobs:
   release:
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'release' }}
+    
+    env:
+      OSGEO_USERNAME: ${{ secrets.OSGEO_USERNAME }}
+      OSGEO_PASSWORD: ${{ secrets.OSGEO_PASSWORD }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       - uses: actions/checkout@v7
@@ -44,7 +49,9 @@ jobs:
         run: |
           VERSION=${{ github.ref_name }}
           qgis-plugin-ci release ${VERSION} \
-          --github-token ${{ secrets.GITHUB_TOKEN }}
+          --github-token ${GITHUB_TOKEN} \
+          --osgeo-username ${OSGEO_USERNAME} \
+          --osgeo-password ${OSGEO_PASSWORD}
 
   package:
       runs-on: ubuntu-latest
