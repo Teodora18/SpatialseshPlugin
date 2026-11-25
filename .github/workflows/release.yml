@@ -30,8 +30,7 @@ jobs:
     if: ${{ github.event_name == 'release' }}
     
     env:
-      OSGEO_USERNAME: ${{ secrets.OSGEO_USERNAME }}
-      OSGEO_PASSWORD: ${{ secrets.OSGEO_PASSWORD }}
+      QGIS_PLUGIN_TOKEN: ${{ secrets.QGIS_PLUGIN_TOKEN }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
@@ -43,15 +42,14 @@ jobs:
           python-version: '3.12'
 
       - name: Install qgis-plugin-ci
-        run: pip install qgis-plugin-ci>=2.10.0
+        run: pip install qgis-plugin-ci>=2.11.0
 
       - name: Release
         run: |
           VERSION=${{ github.ref_name }}
           qgis-plugin-ci release ${VERSION} \
           --github-token ${GITHUB_TOKEN} \
-          --osgeo-username ${OSGEO_USERNAME} \
-          --osgeo-password ${OSGEO_PASSWORD}
+          --qgis-token ${QGIS_PLUGIN_TOKEN}
 
   package:
       runs-on: ubuntu-latest
@@ -66,7 +64,7 @@ jobs:
 
         - name: Install dependencies
           run: |
-            sudo pip install qgis-plugin-ci
+            sudo pip install qgis-plugin-ci>=2.11.0
             
         - name: Package
           run: |
