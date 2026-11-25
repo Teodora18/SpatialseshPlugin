@@ -2,6 +2,8 @@
 from typing import Any, Optional
 import os
 
+
+from qgis.core import QgsProcessingAlgorithm
 from qgis.core import QgsProcessing
 from qgis.core import QgsProcessingContext
 from qgis.core import QgsProcessingFeedback, QgsProcessingMultiStepFeedback
@@ -21,10 +23,9 @@ from ..utils.fix_layer import (
     fix_layer_main_pipeline,
     process_gaps,
 )
-from ..utils.license_manager import MaplangoLicensedAlgorithm
 
 
-class Fix_layer_general(MaplangoLicensedAlgorithm):
+class Fix_layer_general(QgsProcessingAlgorithm):
     def __init__(self):
         super().__init__()
 

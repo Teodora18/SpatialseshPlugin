@@ -40,7 +40,7 @@ class DistanceAndBearingAlgorithm(QgsProcessingAlgorithm):
                 "maximim_distance_m",
                 "Maximim distance (m)",
                 type=Qgis.ProcessingNumberParameterType.Double,
-                defaultValue=None,
+                defaultValue=10000,
             )
         )
         self.addParameter(
